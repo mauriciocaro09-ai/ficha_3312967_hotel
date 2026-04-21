@@ -1,0 +1,60 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Backend: Dev + Health",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"dev:health:clean"
+			],
+			"options": {
+				"cwd": "C:/Users/mauri/OneDrive/Escritorio/NODE/BACKEND"
+			},
+			"isBackground": true,
+			"group": "build"
+		},
+		{
+			"label": "Frontend: Dev",
+			"type": "shell",
+			"command": "npx",
+			"args": [
+				"--yes",
+				"http-server",
+				".",
+				"-p",
+				"5500",
+				"-c-1"
+			],
+			"options": {
+				"cwd": "C:/Users/mauri/OneDrive/Escritorio/NODE/mi-proyecto-frontend"
+			},
+			"isBackground": true,
+			"group": "build"
+		},
+		{
+			"label": "Backend: Health Check",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"health"
+			],
+			"options": {
+				"cwd": "C:/Users/mauri/OneDrive/Escritorio/NODE/BACKEND"
+			},
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "Fullstack: Levantar Todo",
+			"dependsOn": [
+				"Backend: Dev + Health",
+				"Frontend: Dev"
+			],
+			"dependsOrder": "parallel",
+			"group": "build"
+		}
+	]
+}

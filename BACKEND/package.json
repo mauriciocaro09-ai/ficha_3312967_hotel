@@ -1,0 +1,33 @@
+{
+  "name": "hospedaje_digital",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "stop:port": "node scripts/stop-port.js 3000",
+    "start:clean": "npm run stop:port && npm start",
+    "dev:clean": "npm run stop:port && npm run dev",
+    "dev:health:clean": "npm run stop:port && npm run dev:health",
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "dev:health": "npm run health && npm run dev",
+    "health": "node health_check.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "mysql2": "^3.19.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
