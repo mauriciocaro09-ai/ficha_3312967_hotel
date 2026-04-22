@@ -90,6 +90,17 @@ const Servicios = {
 
         return result;
 
+    },
+
+    toggleEstado: async (id, estado) => {
+
+        const [result] = await db.query(
+            "UPDATE Servicios SET Estado=? WHERE IDServicio=?",
+            [estado, id]
+        );
+
+        return result;
+
     }
 
 };

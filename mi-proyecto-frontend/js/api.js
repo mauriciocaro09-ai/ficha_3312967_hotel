@@ -295,7 +295,7 @@ async function loginUsuario(email, contrasena) {
 async function obtenerReservas() {
     apiLogger.log('Obteniendo reservas...');
     try {
-        const data = await requestJsonAuth('/reservas');
+        const data = await requestJson('/reservas');
         return Array.isArray(data) ? data : [];
     } catch (error) {
         apiLogger.error('Error al obtener reservas:', error.message);
@@ -306,7 +306,7 @@ async function obtenerReservas() {
 async function crearReserva(reserva) {
     apiLogger.log('Creando reserva:', reserva);
     try {
-        return await requestJsonAuth('/reservas', { method: 'POST', body: reserva });
+        return await requestJson('/reservas', { method: 'POST', body: reserva });
     } catch (error) {
         apiLogger.error('Error al crear reserva:', error.message);
         throw error;
@@ -316,7 +316,7 @@ async function crearReserva(reserva) {
 async function actualizarReserva(id, reserva) {
     apiLogger.log('Actualizando reserva:', id);
     try {
-        return await requestJsonAuth(`/reservas/${id}`, { method: 'PUT', body: reserva });
+        return await requestJson(`/reservas/${id}`, { method: 'PUT', body: reserva });
     } catch (error) {
         apiLogger.error('Error al actualizar reserva:', error.message);
         throw error;
@@ -326,7 +326,7 @@ async function actualizarReserva(id, reserva) {
 async function cancelarReserva(id) {
     apiLogger.log('Cancelando reserva:', id);
     try {
-        return await requestJsonAuth(`/reservas/${id}/cancelar`, { method: 'PUT', body: {} });
+        return await requestJson(`/reservas/${id}/cancelar`, { method: 'PUT', body: {} });
     } catch (error) {
         apiLogger.error('Error al cancelar reserva:', error.message);
         throw error;
@@ -340,7 +340,7 @@ async function cancelarReserva(id) {
 async function obtenerPaquetes() {
     apiLogger.log('Obteniendo paquetes...');
     try {
-        const data = await requestJsonAuth('/paquetes');
+        const data = await requestJson('/paquetes');
         return Array.isArray(data) ? data : [];
     } catch (error) {
         apiLogger.error('Error al obtener paquetes:', error.message);
@@ -351,7 +351,7 @@ async function obtenerPaquetes() {
 async function obtenerPaquetePorId(id) {
     apiLogger.log('Obteniendo paquete por ID:', id);
     try {
-        return await requestJsonAuth(`/paquetes/${id}`);
+        return await requestJson(`/paquetes/${id}`);
     } catch (error) {
         apiLogger.error('Error al obtener paquete:', error.message);
         return null;
@@ -361,7 +361,7 @@ async function obtenerPaquetePorId(id) {
 async function crearPaquete(paquete) {
     apiLogger.log('Creando paquete:', paquete);
     try {
-        return await requestJsonAuth('/paquetes', { method: 'POST', body: paquete });
+        return await requestJson('/paquetes', { method: 'POST', body: paquete });
     } catch (error) {
         apiLogger.error('Error al crear paquete:', error.message);
         throw error;
@@ -371,7 +371,7 @@ async function crearPaquete(paquete) {
 async function actualizarPaquete(id, paquete) {
     apiLogger.log('Actualizando paquete:', id);
     try {
-        return await requestJsonAuth(`/paquetes/${id}`, { method: 'PUT', body: paquete });
+        return await requestJson(`/paquetes/${id}`, { method: 'PUT', body: paquete });
     } catch (error) {
         apiLogger.error('Error al actualizar paquete:', error.message);
         throw error;
@@ -381,7 +381,7 @@ async function actualizarPaquete(id, paquete) {
 async function eliminarPaquete(id) {
     apiLogger.log('Eliminando paquete:', id);
     try {
-        return await requestJsonAuth(`/paquetes/${id}`, { method: 'DELETE', allowNoContent: true });
+        return await requestJson(`/paquetes/${id}`, { method: 'DELETE', allowNoContent: true });
     } catch (error) {
         apiLogger.error('Error al eliminar paquete:', error.message);
         throw error;
@@ -400,6 +400,16 @@ async function obtenerClientes() {
     } catch (error) {
         apiLogger.error('Error al obtener clientes:', error.message);
         return [];
+    }
+}
+
+async function toggleEstadoServicio(id, estado) {
+    apiLogger.log('Cambiando estado de servicio:', id, '->', estado);
+    try {
+        return await requestJson(`/servicios/${id}/estado`, { method: 'PATCH', body: { Estado: estado } });
+    } catch (error) {
+        apiLogger.error('Error al cambiar estado del servicio:', error.message);
+        throw error;
     }
 }
 

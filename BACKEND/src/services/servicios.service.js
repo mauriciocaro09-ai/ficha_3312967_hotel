@@ -20,6 +20,10 @@ const ServiciosService = {
 
     eliminar: async (id) => {
         return await Servicios.eliminar(id);
+    },
+
+    toggleEstado: async (id, estado) => {
+        return await Servicios.toggleEstado(id, estado);
     }
 
 };

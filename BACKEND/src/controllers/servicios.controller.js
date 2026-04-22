@@ -109,6 +109,28 @@ crear: async (req, res) => {
 
         }
 
+    },
+
+    toggleEstado: async (req, res) => {
+
+        try {
+
+            const { Estado } = req.body;
+
+            if (Estado === undefined || Estado === null) {
+                return res.status(400).json({ error: "Campo Estado es requerido" });
+            }
+
+            await ServiciosService.toggleEstado(req.params.id, Estado);
+
+            res.json({ mensaje: "Estado del servicio actualizado", Estado });
+
+        } catch (error) {
+
+            res.status(500).json({ error: "Error actualizando estado del servicio" });
+
+        }
+
     }
 
 };

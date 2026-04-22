@@ -14,4 +14,6 @@ router.put("/:id", ServiciosController.actualizar);
 
 router.delete("/:id", ServiciosController.eliminar);
 
+router.patch("/:id/estado", ServiciosController.toggleEstado);
+
 module.exports = router;

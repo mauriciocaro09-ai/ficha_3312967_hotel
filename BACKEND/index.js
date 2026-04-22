@@ -3,6 +3,8 @@
  * API REST con Express
  */
 
+require('dotenv').config();
+
 const app = require('./src/app');
 const db = require('./src/database/connection');
 const port = process.env.PORT || 3000;

@@ -5,6 +5,7 @@
 let habitacionesAdminCargadas = [];
 let serviciosCargados = [];
 let lastShownApiError = null;
+let habitacionesParaReserva = [];
 
 const paginationState = {
     habitaciones: { page: 1, pageSize: 6 },
@@ -2204,16 +2205,6 @@ async function cargarReservasAdmin() {
     const tbody = document.getElementById('reservas-admin-tbody');
     if (!tbody) return;
 
-    if (!getAuthToken()) {
-        tbody.innerHTML = `<tr><td colspan="7" class="mensaje-vacio mensaje-auth">
-            <i class="fa-solid fa-lock"></i> Debes iniciar sesión para ver las reservas.
-            <button type="button" class="btn-accion-crud btn-accion-principal btn-login-inline" onclick="mostrarModalLogin()">
-                Iniciar sesión
-            </button>
-        </td></tr>`;
-        return;
-    }
-
     tbody.innerHTML = '<tr><td colspan="7" class="mensaje-vacio">Cargando reservas...</td></tr>';
 
     reservasCargadas = await obtenerReservas();
@@ -2313,7 +2304,14 @@ function abrirModalReservaAdmin(reserva = null) {
     if (reserva) {
         if (titulo) titulo.textContent = 'Editar reserva';
         document.getElementById('reserva-admin-id').value = reserva.IDReserva || '';
-        document.getElementById('reserva-admin-documento').value = reserva.NroDocumento || '';
+        const clienteBuscar = document.getElementById('reserva-admin-cliente-buscar');
+        const clienteId = document.getElementById('reserva-admin-cliente-id');
+        if (clienteBuscar && reserva.NroDocumento) {
+            const nombre = `${reserva.Nombre || ''} ${reserva.Apellido || ''}`.trim();
+            clienteBuscar.value = nombre ? `${nombre} — ${reserva.NroDocumento}` : reserva.NroDocumento;
+            clienteBuscar.dataset.documentoSeleccionado = reserva.NroDocumento;
+        }
+        if (clienteId) clienteId.value = reserva.NroDocumento || '';
         document.getElementById('reserva-admin-habitacion').value = reserva.IDHabitacion || '';
         document.getElementById('reserva-admin-fecha-inicio').value = reserva.FechaInicio ? reserva.FechaInicio.split('T')[0] : '';
         document.getElementById('reserva-admin-fecha-fin').value = reserva.FechaFinalizacion ? reserva.FechaFinalizacion.split('T')[0] : '';
@@ -2324,57 +2322,164 @@ function abrirModalReservaAdmin(reserva = null) {
         document.getElementById('reserva-admin-metodo-pago').value = reserva.MetodoPago || 1;
         document.getElementById('reserva-admin-estado').value = reserva.IdEstadoReserva || 1;
 
-        const selectPaquetes = document.getElementById('reserva-admin-paquetes');
-        if (selectPaquetes && reserva.PaquetesIds) {
-            const ids = String(reserva.PaquetesIds).split(',').map(s => s.trim());
-            Array.from(selectPaquetes.options).forEach(opt => {
-                opt.selected = ids.includes(opt.value);
-            });
-        }
-
-        const selectServicios = document.getElementById('reserva-admin-servicios');
-        if (selectServicios && reserva.ServiciosIds) {
-            const ids = String(reserva.ServiciosIds).split(',').map(s => s.trim());
-            Array.from(selectServicios.options).forEach(opt => {
-                opt.selected = ids.includes(opt.value);
-            });
-        }
     } else {
         if (titulo) titulo.textContent = 'Nueva reserva';
     }
 
+    const paquetesIds = reserva?.PaquetesIds
+        ? String(reserva.PaquetesIds).split(',').map(s => s.trim())
+        : [];
+    const serviciosIds = reserva?.ServiciosIds
+        ? String(reserva.ServiciosIds).split(',').map(s => s.trim())
+        : [];
+
     modal.classList.remove('hidden');
     document.body.classList.add('modal-open');
-    cargarSelectsReserva();
+    cargarSelectsReserva(paquetesIds, serviciosIds);
 }
 
-async function cargarSelectsReserva() {
+async function cargarSelectsReserva(paquetesSeleccionados = [], serviciosSeleccionados = []) {
     const [habitaciones, servicios, paquetes] = await Promise.all([
         obtenerHabitaciones(),
         obtenerServicios(),
         obtenerPaquetes()
     ]);
 
+    habitacionesParaReserva = habitaciones;
+
+    // Habitaciones — muestra precio por noche en el option
     const selectHab = document.getElementById('reserva-admin-habitacion');
     if (selectHab && habitaciones.length > 0) {
         const valorActual = selectHab.value;
         selectHab.innerHTML = '<option value="">-- Selecciona habitación --</option>' +
-            habitaciones.map(h => `<option value="${h.IDHabitacion}">${escaparHtml(h.NombreHabitacion || '')}</option>`).join('');
+            habitaciones.map(h => `<option value="${h.IDHabitacion}" data-costo="${h.Costo || 0}">${escaparHtml(h.NombreHabitacion || '')} — $${Number(h.Costo || 0).toLocaleString('es-CO')}/noche</option>`).join('');
         if (valorActual) selectHab.value = valorActual;
     }
 
-    const selectPaq = document.getElementById('reserva-admin-paquetes');
-    if (selectPaq) {
-        selectPaq.innerHTML = paquetes.map(p =>
-            `<option value="${p.IDPaquete}">${escaparHtml(p.NombrePaquete || '')}</option>`
-        ).join('');
+    // Paquetes — solo activos — tarjetas con imagen, descripción y data-precio
+    const gridPaquetes = document.getElementById('reserva-admin-paquetes-grid');
+    if (gridPaquetes) {
+        const activos = paquetes.filter(p => Number(p.Estado) === 1);
+        if (activos.length === 0) {
+            gridPaquetes.innerHTML = '<p class="cargando-opciones">No hay paquetes activos.</p>';
+        } else {
+            gridPaquetes.innerHTML = activos.map(p => {
+                const seleccionado = paquetesSeleccionados.includes(String(p.IDPaquete));
+                const imgHtml = p.ImagenURL
+                    ? `<div class="paquete-card-img-wrap"><img src="${escaparHtml(p.ImagenURL)}" class="paquete-card-img" alt="${escaparHtml(p.NombrePaquete || '')}" onerror="this.closest('.paquete-card-img-wrap').style.display='none'"></div>`
+                    : '';
+                return `
+                <div class="paquete-card ${seleccionado ? 'seleccionado' : ''}"
+                     data-id="${p.IDPaquete}" data-precio="${Number(p.Precio || 0)}"
+                     role="checkbox" aria-checked="${seleccionado}" tabindex="0">
+                    ${imgHtml}
+                    <div class="paquete-card-header">
+                        <span class="paquete-card-nombre">${escaparHtml(p.NombrePaquete || '')}</span>
+                        <span class="paquete-card-precio">$${Number(p.Precio || 0).toLocaleString('es-CO')}</span>
+                    </div>
+                    <p class="paquete-card-desc">${escaparHtml(p.Descripcion || '')}</p>
+                    <div class="paquete-card-detalle">
+                        <span><i class="fa-solid fa-bed"></i> ${escaparHtml(p.NombreHabitacion || '')}</span>
+                        <span><i class="fa-solid fa-concierge-bell"></i> ${escaparHtml(p.NombreServicio || '')}</span>
+                    </div>
+                    <div class="paquete-card-check"><i class="fa-solid fa-check"></i> Seleccionado</div>
+                </div>`;
+            }).join('');
+
+            gridPaquetes.querySelectorAll('.paquete-card').forEach(card => {
+                const toggle = () => {
+                    card.classList.toggle('seleccionado');
+                    card.setAttribute('aria-checked', card.classList.contains('seleccionado'));
+                    recalcularPrecio();
+                };
+                card.addEventListener('click', toggle);
+                card.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggle(); } });
+            });
+        }
     }
 
-    const selectServ = document.getElementById('reserva-admin-servicios');
-    if (selectServ) {
-        selectServ.innerHTML = servicios.map(s =>
-            `<option value="${s.IDServicio}">${escaparHtml(s.NombreServicio || '')}</option>`
-        ).join('');
+    // Servicios — solo activos — botones con descripción y data-costo
+    const gridServicios = document.getElementById('reserva-admin-servicios-grid');
+    if (gridServicios) {
+        const activos = servicios.filter(s => Number(s.Estado) === 1);
+        if (activos.length === 0) {
+            gridServicios.innerHTML = '<p class="cargando-opciones">No hay servicios activos.</p>';
+        } else {
+            gridServicios.innerHTML = activos.map(s => {
+                const seleccionado = serviciosSeleccionados.includes(String(s.IDServicio));
+                const costo = Number(s.Costo || 0);
+                const precioTexto = costo > 0 ? `$${costo.toLocaleString('es-CO')}` : 'Incluido';
+                return `
+                <button type="button"
+                    class="servicio-toggle-btn ${seleccionado ? 'seleccionado' : ''}"
+                    data-id="${s.IDServicio}" data-costo="${costo}" aria-pressed="${seleccionado}">
+                    <span class="servicio-btn-nombre">${escaparHtml(s.NombreServicio || '')}</span>
+                    <span class="servicio-btn-desc">${escaparHtml(s.Descripcion || '')}</span>
+                    <span class="servicio-btn-precio">${precioTexto}</span>
+                </button>`;
+            }).join('');
+
+            gridServicios.querySelectorAll('.servicio-toggle-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    btn.classList.toggle('seleccionado');
+                    btn.setAttribute('aria-pressed', btn.classList.contains('seleccionado'));
+                    recalcularPrecio();
+                });
+            });
+        }
+    }
+
+    configurarCalculoPrecio();
+    recalcularPrecio();
+}
+
+function recalcularPrecio() {
+    const selectHab = document.getElementById('reserva-admin-habitacion');
+    const fechaInicioVal = document.getElementById('reserva-admin-fecha-inicio')?.value;
+    const fechaFinVal = document.getElementById('reserva-admin-fecha-fin')?.value;
+    const descuento = Number(document.getElementById('reserva-admin-descuento')?.value || 0);
+
+    let costoHab = 0;
+    if (selectHab?.value && fechaInicioVal && fechaFinVal) {
+        const hab = habitacionesParaReserva.find(h => String(h.IDHabitacion) === String(selectHab.value));
+        if (hab) {
+            const inicio = new Date(fechaInicioVal + 'T00:00:00');
+            const fin = new Date(fechaFinVal + 'T00:00:00');
+            const noches = Math.max(1, Math.round((fin - inicio) / 86400000));
+            costoHab = Number(hab.Costo || 0) * noches;
+        }
+    }
+
+    const sumaPaquetes = Array.from(
+        document.querySelectorAll('#reserva-admin-paquetes-grid .paquete-card.seleccionado')
+    ).reduce((sum, el) => sum + Number(el.dataset.precio || 0), 0);
+
+    const sumaServicios = Array.from(
+        document.querySelectorAll('#reserva-admin-servicios-grid .servicio-toggle-btn.seleccionado')
+    ).reduce((sum, el) => sum + Number(el.dataset.costo || 0), 0);
+
+    const subtotal = costoHab + sumaPaquetes + sumaServicios;
+    const total = Math.max(0, subtotal - Math.max(0, descuento));
+
+    const elSub = document.getElementById('reserva-admin-subtotal');
+    const elTot = document.getElementById('reserva-admin-total');
+    if (elSub) elSub.value = subtotal;
+    if (elTot) elTot.value = total;
+}
+
+function configurarCalculoPrecio() {
+    const ids = ['reserva-admin-habitacion', 'reserva-admin-fecha-inicio', 'reserva-admin-fecha-fin'];
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && !el.dataset.precioListener) {
+            el.addEventListener('change', recalcularPrecio);
+            el.dataset.precioListener = 'true';
+        }
+    });
+    const desc = document.getElementById('reserva-admin-descuento');
+    if (desc && !desc.dataset.precioListener) {
+        desc.addEventListener('input', recalcularPrecio);
+        desc.dataset.precioListener = 'true';
     }
 }
 
@@ -2390,8 +2495,18 @@ function limpiarFormularioReservaAdmin() {
     if (form) form.reset();
     const idField = document.getElementById('reserva-admin-id');
     if (idField) idField.value = '';
+    const clienteId = document.getElementById('reserva-admin-cliente-id');
+    if (clienteId) clienteId.value = '';
+    const clienteBuscar = document.getElementById('reserva-admin-cliente-buscar');
+    if (clienteBuscar) { clienteBuscar.value = ''; clienteBuscar.dataset.documentoSeleccionado = ''; }
+    const lista = document.getElementById('reserva-admin-cliente-lista');
+    if (lista) lista.classList.add('hidden');
     const mensaje = document.getElementById('mensaje-reserva-admin-modal');
     if (mensaje) mensaje.textContent = '';
+    const elSub = document.getElementById('reserva-admin-subtotal');
+    const elTot = document.getElementById('reserva-admin-total');
+    if (elSub) elSub.value = 0;
+    if (elTot) elTot.value = 0;
 }
 
 async function guardarReservaAdmin(e) {
@@ -2399,18 +2514,28 @@ async function guardarReservaAdmin(e) {
     const mensajeEl = document.getElementById('mensaje-reserva-admin-modal');
     const id = document.getElementById('reserva-admin-id')?.value;
 
-    const documento = document.getElementById('reserva-admin-documento')?.value?.trim();
+    const documento = document.getElementById('reserva-admin-cliente-id')?.value?.trim()
+        || document.getElementById('reserva-admin-cliente-buscar')?.dataset?.documentoSeleccionado?.trim();
     const idHabitacion = document.getElementById('reserva-admin-habitacion')?.value;
     const fechaInicio = document.getElementById('reserva-admin-fecha-inicio')?.value;
     const fechaFin = document.getElementById('reserva-admin-fecha-fin')?.value;
 
-    if (!documento || !idHabitacion || !fechaInicio || !fechaFin) {
-        if (mensajeEl) { mensajeEl.textContent = 'Documento, habitación y fechas son obligatorios.'; mensajeEl.className = 'crud-reservas-mensaje error'; }
+    if (!documento) {
+        if (mensajeEl) { mensajeEl.textContent = 'Selecciona un cliente de la lista.'; mensajeEl.className = 'crud-reservas-mensaje error'; }
+        return;
+    }
+    if (!idHabitacion || !fechaInicio || !fechaFin) {
+        if (mensajeEl) { mensajeEl.textContent = 'Habitación y fechas son obligatorios.'; mensajeEl.className = 'crud-reservas-mensaje error'; }
         return;
     }
 
-    const selectPaquetes = document.getElementById('reserva-admin-paquetes');
-    const selectServicios = document.getElementById('reserva-admin-servicios');
+    const paquetesIds = Array.from(
+        document.querySelectorAll('#reserva-admin-paquetes-grid .paquete-card.seleccionado[data-id]')
+    ).map(el => Number(el.dataset.id));
+
+    const serviciosIds = Array.from(
+        document.querySelectorAll('#reserva-admin-servicios-grid .servicio-toggle-btn.seleccionado[data-id]')
+    ).map(el => Number(el.dataset.id));
 
     const payload = {
         NroDocumento: documento,
@@ -2423,8 +2548,8 @@ async function guardarReservaAdmin(e) {
         MontoTotal: Number(document.getElementById('reserva-admin-total')?.value || 0),
         MetodoPago: Number(document.getElementById('reserva-admin-metodo-pago')?.value || 1),
         IdEstadoReserva: Number(document.getElementById('reserva-admin-estado')?.value || 1),
-        paquetesIds: selectPaquetes ? Array.from(selectPaquetes.selectedOptions).map(o => Number(o.value)) : [],
-        serviciosIds: selectServicios ? Array.from(selectServicios.selectedOptions).map(o => Number(o.value)) : []
+        paquetesIds,
+        serviciosIds
     };
 
     const btnGuardar = document.getElementById('btn-reserva-admin-guardar');
@@ -2458,6 +2583,70 @@ async function cancelarReservaAdmin(id) {
     }
 }
 
+function configurarBuscadorCliente() {
+    const input = document.getElementById('reserva-admin-cliente-buscar');
+    const lista = document.getElementById('reserva-admin-cliente-lista');
+    const hiddenId = document.getElementById('reserva-admin-cliente-id');
+    if (!input || !lista || input.dataset.inicializado) return;
+
+    let clientesCache = [];
+
+    const cerrarLista = () => lista.classList.add('hidden');
+
+    const mostrarSugerencias = (texto) => {
+        const q = texto.trim().toLowerCase();
+        if (!q) { cerrarLista(); return; }
+
+        const coincidencias = clientesCache.filter(c => {
+            const nombreCompleto = `${c.Nombre || ''} ${c.Apellido || ''}`.toLowerCase();
+            const doc = (c.NroDocumento || '').toLowerCase();
+            return nombreCompleto.includes(q) || doc.includes(q);
+        }).slice(0, 8);
+
+        if (coincidencias.length === 0) {
+            lista.innerHTML = '<li class="autocomplete-sin-resultados">Sin resultados</li>';
+        } else {
+            lista.innerHTML = coincidencias.map(c => `
+                <li class="autocomplete-item" data-id="${escaparHtml(String(c.IDCliente || c.NroDocumento))}"
+                    data-doc="${escaparHtml(c.NroDocumento || '')}"
+                    data-nombre="${escaparHtml(`${c.Nombre || ''} ${c.Apellido || ''}`.trim())}">
+                    <span class="autocomplete-nombre">${escaparHtml(`${c.Nombre || ''} ${c.Apellido || ''}`.trim())}</span>
+                    <span class="autocomplete-doc">${escaparHtml(c.NroDocumento || '')}</span>
+                </li>`).join('');
+        }
+        lista.classList.remove('hidden');
+    };
+
+    input.addEventListener('focus', async () => {
+        if (clientesCache.length === 0) clientesCache = await obtenerClientes();
+        if (input.value.trim()) mostrarSugerencias(input.value);
+    });
+
+    input.addEventListener('input', async () => {
+        if (clientesCache.length === 0) clientesCache = await obtenerClientes();
+        hiddenId.value = '';
+        input.dataset.documentoSeleccionado = '';
+        mostrarSugerencias(input.value);
+    });
+
+    lista.addEventListener('click', (e) => {
+        const item = e.target.closest('.autocomplete-item');
+        if (!item) return;
+        const nombre = item.dataset.nombre;
+        const doc = item.dataset.doc;
+        input.value = `${nombre} — ${doc}`;
+        hiddenId.value = doc;
+        input.dataset.documentoSeleccionado = doc;
+        cerrarLista();
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.cliente-search-wrap')) cerrarLista();
+    });
+
+    input.dataset.inicializado = 'true';
+}
+
 function configurarCRUDReservas() {
     const btnNueva = document.getElementById('btn-nueva-reserva-admin');
     if (btnNueva && !btnNueva.dataset.inicializado) {
@@ -2482,6 +2671,8 @@ function configurarCRUDReservas() {
         form.addEventListener('submit', guardarReservaAdmin);
         form.dataset.inicializado = 'true';
     }
+
+    configurarBuscadorCliente();
 
     const btnLimpiar = document.getElementById('btn-reserva-admin-limpiar');
     if (btnLimpiar && !btnLimpiar.dataset.inicializado) {
@@ -2576,22 +2767,14 @@ async function cargarPaquetesAdmin() {
     const tbody = document.getElementById('paquetes-admin-tbody');
     if (!tbody) return;
 
-    if (!getAuthToken()) {
-        tbody.innerHTML = `<tr><td colspan="8" class="mensaje-vacio mensaje-auth">
-            <i class="fa-solid fa-lock"></i> Debes iniciar sesión para ver los paquetes.
-            <button type="button" class="btn-accion-crud btn-accion-principal btn-login-inline" onclick="mostrarModalLogin()">
-                Iniciar sesión
-            </button>
-        </td></tr>`;
-        return;
-    }
-
     tbody.innerHTML = '<tr><td colspan="8" class="mensaje-vacio">Cargando paquetes...</td></tr>';
 
-    paquetesCargados = await obtenerPaquetes();
+    const [paquetes, servicios] = await Promise.all([obtenerPaquetes(), obtenerServicios()]);
+    paquetesCargados = paquetes;
 
     actualizarResumenPaquetes();
     renderTablaPaquetesAdmin(paquetesCargados);
+    renderServiciosEstadoAdmin(servicios);
 }
 
 function actualizarResumenPaquetes() {
@@ -2653,6 +2836,10 @@ function renderTablaPaquetesAdmin(lista) {
                         data-accion-paquete="editar" data-id="${escaparHtml(String(p.IDPaquete))}">
                         Editar
                     </button>
+                    <button type="button" class="btn-accion-fila ${activo ? 'btn-cancelar' : 'btn-ver'}"
+                        data-accion-paquete="toggle-estado" data-id="${escaparHtml(String(p.IDPaquete))}" data-estado="${p.Estado}">
+                        ${activo ? 'Desactivar' : 'Activar'}
+                    </button>
                     <button type="button" class="btn-accion-fila btn-eliminar"
                         data-accion-paquete="eliminar" data-id="${escaparHtml(String(p.IDPaquete))}">
                         Eliminar
@@ -2661,6 +2848,74 @@ function renderTablaPaquetesAdmin(lista) {
             </td>
         </tr>`;
     }).join('');
+}
+
+function renderServiciosEstadoAdmin(servicios) {
+    const grid = document.getElementById('servicios-estado-grid');
+    if (!grid) return;
+
+    if (!servicios || servicios.length === 0) {
+        grid.innerHTML = '<p class="cargando-opciones">No hay servicios registrados.</p>';
+        return;
+    }
+
+    grid.innerHTML = servicios.map(s => {
+        const activo = Number(s.Estado) === 1;
+        const costo = Number(s.Costo || 0);
+        const precioTexto = costo > 0 ? `$${costo.toLocaleString('es-CO')}` : 'Incluido';
+        return `
+        <div class="servicio-estado-card ${activo ? 'activo' : 'inactivo'}">
+            <span class="servicio-estado-nombre">${escaparHtml(s.NombreServicio || '')}</span>
+            <span class="servicio-estado-desc">${escaparHtml(s.Descripcion || '')}</span>
+            <span class="servicio-estado-precio">${precioTexto}</span>
+            <button type="button"
+                class="btn-toggle-estado-servicio ${activo ? 'activo' : 'inactivo'}"
+                data-id="${s.IDServicio}" data-estado="${s.Estado}">
+                <i class="fa-solid ${activo ? 'fa-toggle-on' : 'fa-toggle-off'}"></i>
+                ${activo ? 'Activo' : 'Inactivo'}
+            </button>
+        </div>`;
+    }).join('');
+
+    grid.querySelectorAll('.btn-toggle-estado-servicio').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const id = btn.dataset.id;
+            const estadoActual = Number(btn.dataset.estado);
+            btn.disabled = true;
+            await toggleEstadoServicioAdmin(id, estadoActual);
+        });
+    });
+}
+
+async function toggleEstadoServicioAdmin(id, estadoActual) {
+    try {
+        const nuevoEstado = estadoActual === 1 ? 0 : 1;
+        await toggleEstadoServicio(id, nuevoEstado);
+        const servicios = await obtenerServicios();
+        renderServiciosEstadoAdmin(servicios);
+    } catch (err) {
+        console.error('Error al cambiar estado del servicio:', err.message);
+    }
+}
+
+async function toggleEstadoPaqueteAdmin(id, estadoActual) {
+    const paquete = paquetesCargados.find(p => String(p.IDPaquete) === String(id));
+    if (!paquete) return;
+    try {
+        await actualizarPaquete(id, {
+            NombrePaquete: paquete.NombrePaquete,
+            Descripcion: paquete.Descripcion,
+            IDHabitacion: paquete.IDHabitacion,
+            IDServicio: paquete.IDServicio,
+            Precio: paquete.Precio,
+            Estado: estadoActual === 1 ? 0 : 1,
+            IDCliente: paquete.IDCliente || null,
+            ImagenURL: paquete.ImagenURL || null
+        });
+        await cargarPaquetesAdmin();
+    } catch (err) {
+        console.error('Error al cambiar estado del paquete:', err.message);
+    }
 }
 
 function abrirModalPaqueteAdmin(paquete = null) {
@@ -2678,6 +2933,8 @@ function abrirModalPaqueteAdmin(paquete = null) {
         document.getElementById('paquete-admin-descripcion').value = paquete.Descripcion || '';
         document.getElementById('paquete-admin-precio').value = paquete.Precio || '';
         document.getElementById('paquete-admin-estado').value = paquete.Estado ?? 1;
+        const imgField = document.getElementById('paquete-admin-imagen-url');
+        if (imgField) imgField.value = paquete.ImagenURL || '';
     } else {
         if (titulo) titulo.textContent = 'Nuevo paquete';
     }
@@ -2753,7 +3010,8 @@ async function guardarPaqueteAdmin(e) {
         IDServicio: Number(idServicio),
         Precio: Number(precio),
         Estado: Number(document.getElementById('paquete-admin-estado')?.value ?? 1),
-        IDCliente: document.getElementById('paquete-admin-cliente')?.value || null
+        IDCliente: document.getElementById('paquete-admin-cliente')?.value || null,
+        ImagenURL: document.getElementById('paquete-admin-imagen-url')?.value?.trim() || null
     };
 
     const btnGuardar = document.getElementById('btn-paquete-admin-guardar');
@@ -2828,6 +3086,7 @@ function configurarCRUDPaquetes() {
             const paquete = paquetesCargados.find(p => String(p.IDPaquete) === String(id));
 
             if (accion === 'editar' && paquete) abrirModalPaqueteAdmin(paquete);
+            if (accion === 'toggle-estado') await toggleEstadoPaqueteAdmin(id, Number(btn.dataset.estado));
             if (accion === 'eliminar') await eliminarPaqueteAdmin(id);
         });
         tabla.dataset.inicializado = 'true';

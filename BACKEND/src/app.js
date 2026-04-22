@@ -26,8 +26,8 @@ const verificarToken = require("./middlewares/auth.middleware");
 
 app.use("/api/auth", authRoutes);
 app.use("/api/dashboard", verificarToken, dashboardRoutes);
-app.use("/api/reservas", verificarToken, reservasRoutes);
-app.use("/api/paquetes", verificarToken, paquetesRoutes);
+app.use("/api/reservas", reservasRoutes);
+app.use("/api/paquetes", paquetesRoutes);
 app.use("/api/habitaciones", habitacionesRoutes);
 app.use("/api/servicios", serviciosRoutes);
 app.use("/api/clientes", clientesRoutes);

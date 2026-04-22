@@ -5,13 +5,14 @@ const Paquetes = {
 obtenerTodos: async () => {
 
     const [rows] = await db.query(`
-        SELECT 
+        SELECT
             p.IDPaquete,
             p.NombrePaquete,
             p.Descripcion,
             p.Precio,
             p.Estado,
             p.IDCliente,
+            p.ImagenURL,
 
             h.IDHabitacion,
             h.NombreHabitacion,
@@ -23,10 +24,10 @@ obtenerTodos: async () => {
             c.Apellido as ApellidoCliente
 
         FROM Paquetes p
-        INNER JOIN Habitacion h 
+        INNER JOIN Habitacion h
             ON p.IDHabitacion = h.IDHabitacion
 
-        INNER JOIN Servicios s 
+        INNER JOIN Servicios s
             ON p.IDServicio = s.IDServicio
 
         LEFT JOIN Clientes c
@@ -57,13 +58,14 @@ obtenerTodos: async () => {
             IDServicio,
             Precio,
             Estado,
-            IDCliente
+            IDCliente,
+            ImagenURL = null
         } = paquete;
 
         const sql = `
             INSERT INTO Paquetes
-            (NombrePaquete, Descripcion, IDHabitacion, IDServicio, Precio, Estado, IDCliente)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            (NombrePaquete, Descripcion, IDHabitacion, IDServicio, Precio, Estado, IDCliente, ImagenURL)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `;
 
         const [result] = await db.query(sql, [
@@ -73,7 +75,8 @@ obtenerTodos: async () => {
             IDServicio,
             Precio,
             Estado,
-            IDCliente
+            IDCliente,
+            ImagenURL
         ]);
 
         return result;
@@ -89,12 +92,13 @@ obtenerTodos: async () => {
             IDServicio,
             Precio,
             Estado,
-            IDCliente
+            IDCliente,
+            ImagenURL = null
         } = paquete;
 
         const sql = `
             UPDATE Paquetes
-            SET NombrePaquete=?, Descripcion=?, IDHabitacion=?, IDServicio=?, Precio=?, Estado=?, IDCliente=?
+            SET NombrePaquete=?, Descripcion=?, IDHabitacion=?, IDServicio=?, Precio=?, Estado=?, IDCliente=?, ImagenURL=?
             WHERE IDPaquete=?
         `;
 
@@ -106,6 +110,7 @@ obtenerTodos: async () => {
             Precio,
             Estado,
             IDCliente,
+            ImagenURL,
             id
         ]);
 
