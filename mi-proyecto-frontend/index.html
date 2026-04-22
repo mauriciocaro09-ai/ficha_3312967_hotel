@@ -40,6 +40,12 @@
                         <span class="text">Administrar servicios</span>
                     </a>
                 </li>
+                <li>
+                    <a href="#" onclick="cargarSeccion('administrar-clientes', event)">
+                        <span class="icon"><i class="fa-solid fa-users" aria-hidden="true"></i></span>
+                        <span class="text">Administrar clientes</span>
+                    </a>
+                </li>
 
             </ul>
         </nav>
@@ -256,6 +262,132 @@
                 </div>
             </section>
 
+            <!-- Sección de Administración de Clientes -->
+            <section id="seccion-administrar-clientes" class="crud-clientes-section hidden">
+                <div class="crud-clientes-toolbar">
+                    <button type="button" class="btn-accion-crud btn-accion-principal" id="btn-nuevo-cliente-admin">+ NUEVO CLIENTE</button>
+                    <div id="mensaje-cliente-admin" class="crud-clientes-mensaje" aria-live="polite"></div>
+                </div>
+
+                <div class="crud-clientes-summary">
+                    <article>
+                        <span>Total</span>
+                        <strong id="clientes-admin-total">0</strong>
+                    </article>
+                    <article>
+                        <span>Activos</span>
+                        <strong id="clientes-admin-activos">0</strong>
+                    </article>
+                    <article>
+                        <span>Inactivos</span>
+                        <strong id="clientes-admin-inactivos">0</strong>
+                    </article>
+                </div>
+
+                <div class="crud-clientes-layout">
+                    <section class="crud-clientes-panel crud-clientes-panel-lista">
+                        <div class="crud-clientes-lista-top">
+                            <div>
+                                <h4>Listado de clientes</h4>
+                                <p class="crud-clientes-note">Datos reales obtenidos desde la tabla cliente en MySQL.</p>
+                            </div>
+
+                            <div class="crud-clientes-filtros">
+                                <input type="search" id="busqueda-clientes-admin" placeholder="Buscar por documento, nombre, email o teléfono">
+                                <select id="filtro-estado-clientes-admin" aria-label="Filtrar clientes por estado">
+                                    <option value="all">Todos</option>
+                                    <option value="active">Activos</option>
+                                    <option value="inactive">Inactivos</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="crud-clientes-tabla-wrap">
+                            <table class="crud-clientes-tabla">
+                                <thead>
+                                    <tr>
+                                        <th>Documento</th>
+                                        <th>Nombre</th>
+                                        <th>Apellido</th>
+                                        <th>Email</th>
+                                        <th>Teléfono</th>
+                                        <th>Dirección</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="clientes-admin-tbody">
+                                    <tr>
+                                        <td colspan="8" class="mensaje-vacio">Selecciona "Administrar clientes" para cargar datos.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+            </section>
+
+            <div id="modal-cliente-admin" class="crud-modal hidden" role="dialog" aria-modal="true" aria-labelledby="cliente-admin-form-title">
+                <div class="crud-modal-content">
+                    <button type="button" class="crud-modal-close" id="btn-cerrar-modal-cliente" aria-label="Cerrar formulario">&times;</button>
+                    <h4 id="cliente-admin-form-title">Crear cliente</h4>
+                    <p class="crud-clientes-note">Los campos están alineados con la estructura real de la base de datos.</p>
+                    <div id="mensaje-cliente-admin-modal" class="crud-clientes-mensaje" aria-live="polite"></div>
+
+                    <form id="form-cliente-admin" class="crud-clientes-form">
+                        <input type="hidden" id="cliente-admin-id">
+
+                        <label>
+                            <span>Documento <span class="campo-obligatorio" aria-hidden="true">*</span></span>
+                            <input type="text" id="cliente-admin-documento" required maxlength="50" placeholder="Ej. 1234567890">
+                        </label>
+
+                        <label>
+                            <span>Nombre <span class="campo-obligatorio" aria-hidden="true">*</span></span>
+                            <input type="text" id="cliente-admin-nombre" required maxlength="50" placeholder="Ej. Carlos">
+                        </label>
+
+                        <label>
+                            <span>Apellido</span>
+                            <input type="text" id="cliente-admin-apellido" maxlength="50" placeholder="Ej. López">
+                        </label>
+
+                        <label>
+                            <span>Dirección</span>
+                            <input type="text" id="cliente-admin-direccion" maxlength="50" placeholder="Ej. Calle 10 # 12-34">
+                        </label>
+
+                        <label>
+                            <span>Email <span class="campo-obligatorio" aria-hidden="true">*</span></span>
+                            <input type="email" id="cliente-admin-email" required maxlength="50" placeholder="Ej. cliente@email.com">
+                        </label>
+
+                        <label>
+                            <span>Teléfono</span>
+                            <input type="text" id="cliente-admin-telefono" maxlength="50" placeholder="Ej. 3001234567">
+                        </label>
+
+                        <label>
+                            <span>Estado <span class="campo-obligatorio" aria-hidden="true">*</span></span>
+                            <select id="cliente-admin-estado" required>
+                                <option value="1">Activo</option>
+                                <option value="0">Inactivo</option>
+                            </select>
+                        </label>
+
+                        <label>
+                            <span>ID Rol</span>
+                            <input type="number" id="cliente-admin-idrol" min="1" value="1" placeholder="Ej. 1">
+                        </label>
+
+                        <div class="crud-clientes-form-actions">
+                            <button type="submit" class="btn-accion-crud btn-accion-principal" id="btn-cliente-admin-guardar">Guardar cliente</button>
+                            <button type="button" class="btn-accion-crud btn-accion-secundaria" id="btn-cliente-admin-limpiar">Limpiar formulario</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
             <div id="modal-servicio-admin" class="crud-modal hidden" role="dialog" aria-modal="true" aria-labelledby="servicio-admin-form-title">
                 <div class="crud-modal-content">
                     <button type="button" class="crud-modal-close" id="btn-cerrar-modal-servicio" aria-label="Cerrar formulario">&times;</button>
@@ -396,7 +528,8 @@
             
             const secciones = [
                 'seccion-administrar-habitaciones',
-                'seccion-administrar-servicios'
+                'seccion-administrar-servicios',
+                'seccion-administrar-clientes'
             ];
 
             // Ocultar todas las secciones usando la clase helper
@@ -422,6 +555,10 @@
                 } else if (seccion === 'administrar-servicios') {
                     if (typeof cargarServiciosAdmin === 'function') {
                         cargarServiciosAdmin();
+                    }
+                } else if (seccion === 'administrar-clientes') {
+                    if (typeof cargarClientesAdmin === 'function') {
+                        cargarClientesAdmin();
                     }
                 }
             }
