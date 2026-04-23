@@ -7,11 +7,29 @@ let serviciosCargados = [];
 let lastShownApiError = null;
 let habitacionesParaReserva = [];
 
+const IMAGENES_POOL_PAQUETES = [
+    'http://localhost:3000/img/03habitaciones.jpg',
+    'http://localhost:3000/img/04habitacioint.jpg',
+    'http://localhost:3000/img/06familiar.jpg',
+    'http://localhost:3000/img/05icon2.jpg',
+    'http://localhost:3000/img/05icon3.jpg',
+    'http://localhost:3000/img/05icon4.jpg',
+    'http://localhost:3000/img/05iconlist.jpg',
+    'http://localhost:3000/img/02.jpeg',
+];
+
+const obtenerImagenPaquete = (paquete, indice = 0) => {
+    if (paquete.ImagenURL && paquete.ImagenURL.trim()) return paquete.ImagenURL.trim();
+    return IMAGENES_POOL_PAQUETES[indice % IMAGENES_POOL_PAQUETES.length];
+};
+
 const paginationState = {
     habitaciones: { page: 1, pageSize: 6 },
     servicios: { page: 1, pageSize: 6 },
     habitacionesAdmin: { page: 1, pageSize: 6 },
-    serviciosAdmin: { page: 1, pageSize: 8 }
+    serviciosAdmin: { page: 1, pageSize: 8 },
+    reservasAdmin: { page: 1, pageSize: 10 },
+    paquetesAdmin: { page: 1, pageSize: 10 }
 };
 
 const CLAVE_CONTRASTE_ALTO = 'hospedaje_alto_contraste';
@@ -48,9 +66,10 @@ const getPaginatedItems = (items, key) => {
     };
 };
 
-const renderPaginationControls = (key, anchorElement, totalItems, totalPages, currentPage, onPageChange) => {
+const renderPaginationControls = (key, anchorElement, totalItems, totalPages, currentPage, onPageChange, options = {}) => {
     if (!anchorElement) return;
 
+    const { showSizeSelector = false, pageSizeOptions = [5, 10, 100] } = options;
     const containerId = `pagination-${key}`;
     let controls = document.getElementById(containerId);
 
@@ -61,27 +80,52 @@ const renderPaginationControls = (key, anchorElement, totalItems, totalPages, cu
         anchorElement.insertAdjacentElement('afterend', controls);
     }
 
-    if (totalItems === 0 || totalPages <= 1) {
+    if (totalItems === 0) {
         controls.innerHTML = '';
         controls.classList.add('hidden');
         return;
     }
 
+    const state = ensurePaginationState(key);
+    const selectorHtml = showSizeSelector ? `
+        <label class="pagination-size-label">
+            Mostrar
+            <select class="pagination-size-select">
+                ${pageSizeOptions.map(n => `<option value="${n}" ${state.pageSize === n ? 'selected' : ''}>${n}</option>`).join('')}
+            </select>
+            por página
+        </label>` : '';
+
     controls.classList.remove('hidden');
     controls.innerHTML = `
-        <button type="button" class="pagination-btn" data-page="${currentPage - 1}" ${currentPage <= 1 ? 'disabled' : ''}>Anterior</button>
-        <span class="pagination-info">Página ${currentPage} de ${totalPages} (${totalItems} registros)</span>
-        <button type="button" class="pagination-btn" data-page="${currentPage + 1}" ${currentPage >= totalPages ? 'disabled' : ''}>Siguiente</button>
+        ${selectorHtml}
+        <div class="pagination-nav">
+            <button type="button" class="pagination-btn" data-page="1" ${currentPage <= 1 ? 'disabled' : ''} title="Primera página">«</button>
+            <button type="button" class="pagination-btn" data-page="${currentPage - 1}" ${currentPage <= 1 ? 'disabled' : ''}>Anterior</button>
+            <span class="pagination-info">Página <strong>${currentPage}</strong> de <strong>${totalPages}</strong> &nbsp;·&nbsp; ${totalItems} registros</span>
+            <button type="button" class="pagination-btn" data-page="${currentPage + 1}" ${currentPage >= totalPages ? 'disabled' : ''}>Siguiente</button>
+            <button type="button" class="pagination-btn" data-page="${totalPages}" ${currentPage >= totalPages ? 'disabled' : ''} title="Última página">»</button>
+        </div>
     `;
 
     controls.querySelectorAll('.pagination-btn').forEach((button) => {
         button.addEventListener('click', () => {
             const nextPage = Number(button.dataset.page);
-            const state = ensurePaginationState(key);
             state.page = Math.min(Math.max(1, nextPage), totalPages);
             onPageChange();
         });
     });
+
+    if (showSizeSelector) {
+        const select = controls.querySelector('.pagination-size-select');
+        if (select) {
+            select.addEventListener('change', () => {
+                state.pageSize = Number(select.value);
+                state.page = 1;
+                onPageChange();
+            });
+        }
+    }
 };
 
 const normalizarTexto = (valor) => String(valor ?? '').trim().toLowerCase();
@@ -1042,7 +1086,9 @@ async function cambiarEstadoHabitacionAdmin(id, nuevoEstado, inputToggle = null)
 
         habitacion.Estado = nuevoEstado ? 1 : 0;
         renderizarHabitacionesAdmin();
-        mostrarMensajeHabitacionAdmin(`Estado actualizado: ${habitacion.NombreHabitacion} ${nuevoEstado ? 'habilitada' : 'inhabilitada'}.`, 'ok');
+        const msgEstadoHab = `${habitacion.NombreHabitacion} ${nuevoEstado ? 'habilitada' : 'inhabilitada'}.`;
+        mostrarMensajeHabitacionAdmin(`Estado actualizado: ${msgEstadoHab}`, 'ok');
+        if (typeof showSuccess === 'function') showSuccess(msgEstadoHab, 'Estado actualizado');
 
         if (typeof cargarHabitaciones === 'function') {
             await cargarHabitaciones();
@@ -1245,7 +1291,9 @@ async function guardarHabitacionAdmin(event) {
 
         limpiarFormularioHabitacionAdmin(false);
         await cargarHabitacionesAdmin();
-        mostrarMensajeHabitacionAdmin(idHabitacion ? 'Habitación actualizada correctamente.' : 'Habitación creada correctamente.', 'ok');
+        const msgHab = idHabitacion ? 'Habitación actualizada correctamente.' : 'Habitación creada correctamente.';
+        mostrarMensajeHabitacionAdmin(msgHab, 'ok');
+        if (typeof showSuccess === 'function') showSuccess(msgHab, idHabitacion ? 'Habitación editada' : 'Habitación creada');
         cerrarModalHabitacionAdmin();
 
         if (typeof cargarHabitaciones === 'function') {
@@ -1254,6 +1302,7 @@ async function guardarHabitacionAdmin(event) {
     } catch (error) {
         console.error('Error al guardar habitación:', error);
         mostrarMensajeHabitacionAdmin(error.message || 'Error al guardar la habitación', 'error');
+        if (typeof showError === 'function') showError(error.message || 'No se pudo guardar la habitación', 'Error');
     } finally {
         if (botonGuardar) botonGuardar.disabled = false;
     }
@@ -1277,6 +1326,7 @@ async function eliminarHabitacionAdmin(id) {
 
         await cargarHabitacionesAdmin();
         mostrarMensajeHabitacionAdmin('Habitación eliminada correctamente.', 'ok');
+        if (typeof showSuccess === 'function') showSuccess(`"${nombre}" eliminada correctamente.`, 'Habitación eliminada');
 
         if (typeof cargarHabitaciones === 'function') {
             await cargarHabitaciones();
@@ -1284,6 +1334,7 @@ async function eliminarHabitacionAdmin(id) {
     } catch (error) {
         console.error('Error al eliminar habitación:', error);
         mostrarMensajeHabitacionAdmin(error.message || 'Error al eliminar la habitación', 'error');
+        if (typeof showError === 'function') showError(error.message || 'No se pudo eliminar la habitación', 'Error');
     }
 }
 
@@ -1441,6 +1492,78 @@ function verDetalles(id) {
 }
 
 // ============================================
+// DASHBOARD
+// ============================================
+
+async function cargarDashboard() {
+    const fechaEl = document.getElementById('dashboard-fecha');
+    if (fechaEl) {
+        const now = new Date();
+        fechaEl.textContent = now.toLocaleDateString('es-CO', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+    }
+
+    try {
+        const [stats, habs, servs] = await Promise.all([
+            obtenerEstadisticasDashboard(),
+            obtenerHabitaciones(),
+            obtenerServicios()
+        ]);
+
+        const totalReservasEl = document.getElementById('dash-total-reservas');
+        if (totalReservasEl) totalReservasEl.textContent = stats?.totalReservas ?? '0';
+
+        const ingresosEl = document.getElementById('dash-ingresos');
+        if (ingresosEl) {
+            const monto = Number(stats?.ingresosTotales || 0);
+            ingresosEl.textContent = `$${monto.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+        }
+
+        const habEl = document.getElementById('dash-habitaciones');
+        if (habEl) habEl.textContent = habs.length;
+
+        const servEl = document.getElementById('dash-servicios');
+        if (servEl) servEl.textContent = servs.filter(s => Number(s.Estado) === 1).length;
+
+        const habTop = document.getElementById('dash-habitaciones-top');
+        if (habTop) {
+            const items = stats?.habitacionesMasReservadas;
+            if (items && items.length > 0) {
+                habTop.innerHTML = items.map((h, i) => `
+                    <li>
+                        <span class="ranking-pos">#${i + 1}</span>
+                        <span class="ranking-name">${escaparHtml(h.NombreHabitacion || '—')}</span>
+                        <span class="ranking-count">${h.total}</span>
+                    </li>`).join('');
+            } else {
+                habTop.innerHTML = '<li class="ranking-empty">Sin reservas registradas aún</li>';
+            }
+        }
+
+        const servTop = document.getElementById('dash-servicios-top');
+        if (servTop) {
+            const items = stats?.serviciosMasVendidos;
+            if (items && items.length > 0) {
+                servTop.innerHTML = items.map((s, i) => `
+                    <li>
+                        <span class="ranking-pos">#${i + 1}</span>
+                        <span class="ranking-name">${escaparHtml(s.NombreServicio || '—')}</span>
+                        <span class="ranking-count">${s.total}</span>
+                    </li>`).join('');
+            } else {
+                servTop.innerHTML = '<li class="ranking-empty">Sin servicios vendidos aún</li>';
+            }
+        }
+    } catch (error) {
+        console.error('Error cargando dashboard:', error);
+    }
+}
+
+// ============================================
 // FUNCIONES DE NAVEGACIÓN ENTRE SECCIONES
 // ============================================
 
@@ -1466,6 +1589,12 @@ function cargarSeccion(seccion, event) {
             cargarHabitacionesAdmin();
         } else if (seccion === 'administrar-servicios') {
             cargarServiciosAdmin();
+        } else if (seccion === 'administrar-reservas') {
+            cargarReservasAdmin();
+        } else if (seccion === 'administrar-paquetes') {
+            cargarPaquetesAdmin();
+        } else if (seccion === 'dashboard') {
+            cargarDashboard();
         }
         
         // Cerrar sidebar en móviles
@@ -1848,6 +1977,7 @@ async function guardarServicioAdmin(evento) {
                 throw new Error('No se pudo actualizar el servicio');
             }
             mostrarMensajeServicioAdmin(`Servicio "${nombre}" actualizado correctamente.`, 'ok');
+            if (typeof showSuccess === 'function') showSuccess(`"${nombre}" actualizado correctamente.`, 'Servicio editado');
         } else {
             // Crear
             const resultado = await crearServicio(payload);
@@ -1855,6 +1985,7 @@ async function guardarServicioAdmin(evento) {
                 throw new Error(obtenerMensajeErrorGuardado('Ya existe un servicio con ese nombre. Usa otro nombre para poder guardarlo.', 'No se pudo crear el servicio'));
             }
             mostrarMensajeServicioAdmin(`Servicio "${nombre}" creado correctamente.`, 'ok');
+            if (typeof showSuccess === 'function') showSuccess(`"${nombre}" creado correctamente.`, 'Servicio creado');
         }
 
         limpiarFormularioServicioAdmin(false);
@@ -1863,6 +1994,7 @@ async function guardarServicioAdmin(evento) {
     } catch (error) {
         console.error('Error al guardar servicio:', error);
         mostrarMensajeServicioAdmin(error.message || 'No se pudo guardar el servicio', 'error');
+        if (typeof showError === 'function') showError(error.message || 'No se pudo guardar el servicio', 'Error');
     }
 }
 
@@ -1883,11 +2015,13 @@ async function eliminarServicioAdmin(id) {
         }
 
         mostrarMensajeServicioAdmin(`Servicio "${servicio.NombreServicio}" eliminado correctamente.`, 'ok');
+        if (typeof showSuccess === 'function') showSuccess(`"${servicio.NombreServicio}" eliminado correctamente.`, 'Servicio eliminado');
         limpiarFormularioServicioAdmin(false);
         await cargarServiciosAdmin();
     } catch (error) {
         console.error('Error al eliminar servicio:', error);
         mostrarMensajeServicioAdmin(error.message || 'No se pudo eliminar el servicio', 'error');
+        if (typeof showError === 'function') showError(error.message || 'No se pudo eliminar el servicio', 'Error');
     }
 }
 
@@ -2056,7 +2190,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (document.getElementById('habitaciones-admin-tbody')) {
         configurarCRUDHabitaciones();
-        cargarHabitacionesAdmin();
     }
 
     // Inicializar CRUD de reservas y paquetes
@@ -2066,6 +2199,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (document.getElementById('paquetes-admin-tbody')) {
         configurarCRUDPaquetes();
+    }
+
+    // Cargar dashboard por defecto
+    if (document.getElementById('seccion-dashboard')) {
+        cargarDashboard();
     }
 });
 
@@ -2093,6 +2231,7 @@ window.abrirModalPaqueteAdmin = abrirModalPaqueteAdmin;
 
 window.mostrarModalLogin = mostrarModalLogin;
 window.cerrarModalLogin = cerrarModalLogin;
+window.cargarDashboard = cargarDashboard;
 
 // ============================================
 // LOGIN MODAL
@@ -2234,7 +2373,7 @@ function renderTablaReservasAdmin(lista) {
     const busqueda = document.getElementById('busqueda-reservas-admin')?.value?.toLowerCase() || '';
     const filtroEstado = document.getElementById('filtro-estado-reservas-admin')?.value || 'all';
 
-    let filtradas = lista.filter(r => {
+    const filtradas = lista.filter(r => {
         const cliente = `${r.Nombre || ''} ${r.Apellido || ''} ${r.NroDocumento || ''}`.toLowerCase();
         const habitacion = (r.NombreHabitacion || '').toLowerCase();
         const coincide = !busqueda || cliente.includes(busqueda) || habitacion.includes(busqueda);
@@ -2242,18 +2381,25 @@ function renderTablaReservasAdmin(lista) {
         return coincide && estado;
     });
 
+    const tablaWrap = tbody.closest('.crud-reservas-tabla-wrap') || tbody;
+    const paginacion = getPaginatedItems(filtradas, 'reservasAdmin');
+
     if (filtradas.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7" class="mensaje-vacio">No hay reservas que coincidan.</td></tr>';
+        renderPaginationControls('reservasAdmin', tablaWrap, 0, 0, 1, () => renderTablaReservasAdmin(lista), { showSizeSelector: true });
         return;
     }
 
-    tbody.innerHTML = filtradas.map(r => {
-        const estadoInfo = ESTADOS_RESERVA[r.IdEstadoReserva] || { label: 'Desconocido', clase: '' };
+    tbody.innerHTML = paginacion.items.map(r => {
         const cliente = `${r.Nombre || ''} ${r.Apellido || ''}`.trim() || 'Sin cliente';
         const fechaInicio = r.FechaInicio ? new Date(r.FechaInicio).toLocaleDateString('es-CO') : '-';
         const fechaFin = r.FechaFinalizacion ? new Date(r.FechaFinalizacion).toLocaleDateString('es-CO') : '-';
         const total = r.MontoTotal != null ? `$${Number(r.MontoTotal).toLocaleString('es-CO')}` : '-';
-        const esCancelada = Number(r.IdEstadoReserva) === 3;
+        const estado = Number(r.IdEstadoReserva);
+        const esActiva = estado === 1;
+        const esCompletada = estado === 2;
+        const switchId = `switch-reserva-${r.IDReserva}`;
+        const switchLabel = esActiva ? 'Activa' : esCompletada ? 'Completada' : 'Cancelada';
 
         return `
         <tr>
@@ -2272,7 +2418,24 @@ function renderTablaReservasAdmin(lista) {
                 </div>
             </td>
             <td><strong>${total}</strong></td>
-            <td><span class="badge-estado ${estadoInfo.clase}">${estadoInfo.label}</span></td>
+            <td>
+                <div class="reserva-estado-toggle">
+                    <label class="switch-estado" for="${escaparHtml(switchId)}" title="${switchLabel}">
+                        <input
+                            id="${escaparHtml(switchId)}"
+                            type="checkbox"
+                            data-accion-reserva-estado="toggle"
+                            data-id="${escaparHtml(String(r.IDReserva))}"
+                            data-estado="${estado}"
+                            ${esActiva || esCompletada ? 'checked' : ''}
+                            ${esCompletada ? 'disabled' : ''}
+                            aria-label="Estado de reserva: ${switchLabel}"
+                        >
+                        <span class="switch-slider"></span>
+                    </label>
+                    <span class="reserva-estado-label">${switchLabel}</span>
+                </div>
+            </td>
             <td>
                 <div class="acciones-tabla">
                     <button type="button" class="btn-accion-fila btn-ver"
@@ -2283,15 +2446,17 @@ function renderTablaReservasAdmin(lista) {
                         data-accion-reserva="editar" data-id="${escaparHtml(String(r.IDReserva))}">
                         Editar
                     </button>
-                    ${!esCancelada ? `
-                    <button type="button" class="btn-accion-fila btn-cancelar"
-                        data-accion-reserva="cancelar" data-id="${escaparHtml(String(r.IDReserva))}">
-                        Cancelar
-                    </button>` : ''}
                 </div>
             </td>
         </tr>`;
     }).join('');
+
+    renderPaginationControls(
+        'reservasAdmin', tablaWrap,
+        paginacion.totalItems, paginacion.totalPages, paginacion.currentPage,
+        () => renderTablaReservasAdmin(lista),
+        { showSizeSelector: true }
+    );
 }
 
 function abrirModalReservaAdmin(reserva = null) {
@@ -2363,11 +2528,10 @@ async function cargarSelectsReserva(paquetesSeleccionados = [], serviciosSelecci
         if (activos.length === 0) {
             gridPaquetes.innerHTML = '<p class="cargando-opciones">No hay paquetes activos.</p>';
         } else {
-            gridPaquetes.innerHTML = activos.map(p => {
+            gridPaquetes.innerHTML = activos.map((p, idx) => {
                 const seleccionado = paquetesSeleccionados.includes(String(p.IDPaquete));
-                const imgHtml = p.ImagenURL
-                    ? `<div class="paquete-card-img-wrap"><img src="${escaparHtml(p.ImagenURL)}" class="paquete-card-img" alt="${escaparHtml(p.NombrePaquete || '')}" onerror="this.closest('.paquete-card-img-wrap').style.display='none'"></div>`
-                    : '';
+                const imgSrc = obtenerImagenPaquete(p, idx);
+                const imgHtml = `<div class="paquete-card-img-wrap"><img src="${escaparHtml(imgSrc)}" class="paquete-card-img" alt="${escaparHtml(p.NombrePaquete || '')}" onerror="this.src='assets/images/default.svg'"></div>`;
                 return `
                 <div class="paquete-card ${seleccionado ? 'seleccionado' : ''}"
                      data-id="${p.IDPaquete}" data-precio="${Number(p.Precio || 0)}"
@@ -2507,6 +2671,12 @@ function limpiarFormularioReservaAdmin() {
     const elTot = document.getElementById('reserva-admin-total');
     if (elSub) elSub.value = 0;
     if (elTot) elTot.value = 0;
+
+    const today = new Date().toISOString().split('T')[0];
+    const fechaInicio = document.getElementById('reserva-admin-fecha-inicio');
+    const fechaFin = document.getElementById('reserva-admin-fecha-fin');
+    if (fechaInicio) fechaInicio.min = today;
+    if (fechaFin) fechaFin.min = today;
 }
 
 async function guardarReservaAdmin(e) {
@@ -2559,14 +2729,17 @@ async function guardarReservaAdmin(e) {
         if (id) {
             await actualizarReserva(id, payload);
             if (mensajeEl) { mensajeEl.textContent = 'Reserva actualizada correctamente.'; mensajeEl.className = 'crud-reservas-mensaje exito'; }
+            if (typeof showSuccess === 'function') showSuccess('Reserva actualizada correctamente.', 'Reserva editada');
         } else {
             await crearReserva(payload);
             if (mensajeEl) { mensajeEl.textContent = 'Reserva creada correctamente.'; mensajeEl.className = 'crud-reservas-mensaje exito'; }
+            if (typeof showSuccess === 'function') showSuccess('Reserva creada correctamente.', 'Reserva creada');
         }
         await cargarReservasAdmin();
         setTimeout(cerrarModalReservaAdmin, 900);
     } catch (err) {
         if (mensajeEl) { mensajeEl.textContent = err.message || 'Error al guardar la reserva.'; mensajeEl.className = 'crud-reservas-mensaje error'; }
+        if (typeof showError === 'function') showError(err.message || 'No se pudo guardar la reserva.', 'Error');
     } finally {
         if (btnGuardar) { btnGuardar.disabled = false; btnGuardar.textContent = 'Guardar reserva'; }
     }
@@ -2580,6 +2753,55 @@ async function cancelarReservaAdmin(id) {
         await cargarReservasAdmin();
     } catch (err) {
         if (typeof showError === 'function') showError(err.message || 'Error al cancelar la reserva', 'Error');
+    }
+}
+
+async function toggleEstadoReservaAdmin(id, activar, inputToggle) {
+    const reserva = reservasCargadas.find(r => String(r.IDReserva) === String(id));
+    if (!reserva) return;
+
+    if (activar) {
+        // Reactivar reserva cancelada
+        inputToggle.disabled = true;
+        try {
+            const payload = {
+                NroDocumento: reserva.NroDocumento,
+                IDHabitacion: reserva.IDHabitacion,
+                FechaInicio: reserva.FechaInicio ? reserva.FechaInicio.split('T')[0] : '',
+                FechaFinalizacion: reserva.FechaFinalizacion ? reserva.FechaFinalizacion.split('T')[0] : '',
+                MetodoPago: reserva.MetodoPago || 1,
+                IdEstadoReserva: 1,
+                SubTotal: reserva.SubTotal || 0,
+                Descuento: reserva.Descuento || 0,
+                IVA: reserva.IVA || 0,
+                MontoTotal: reserva.MontoTotal || 0
+            };
+            await actualizarReserva(id, payload);
+            if (typeof showSuccess === 'function') showSuccess(`Reserva #${id} reactivada correctamente.`, 'Reserva activada');
+            await cargarReservasAdmin();
+        } catch (err) {
+            inputToggle.checked = false;
+            inputToggle.disabled = false;
+            if (typeof showError === 'function') showError(err.message || 'No se pudo reactivar la reserva.', 'Error');
+            console.error('Error al reactivar reserva:', err.message);
+        }
+    } else {
+        // Cancelar reserva activa con confirmación
+        if (!confirm('¿Cancelar esta reserva?')) {
+            inputToggle.checked = true;
+            return;
+        }
+        inputToggle.disabled = true;
+        try {
+            await cancelarReserva(id);
+            if (typeof showSuccess === 'function') showSuccess(`Reserva #${id} cancelada.`, 'Reserva cancelada');
+            await cargarReservasAdmin();
+        } catch (err) {
+            inputToggle.checked = true;
+            inputToggle.disabled = false;
+            if (typeof showError === 'function') showError(err.message || 'No se pudo cancelar la reserva.', 'Error');
+            console.error('Error al cancelar reserva:', err.message);
+        }
     }
 }
 
@@ -2691,20 +2913,32 @@ function configurarCRUDReservas() {
 
             if (accion === 'ver' && reserva) mostrarDetalleReserva(reserva);
             if (accion === 'editar' && reserva) abrirModalReservaAdmin(reserva);
-            if (accion === 'cancelar') await cancelarReservaAdmin(id);
         });
+
+        tabla.addEventListener('change', async (e) => {
+            const toggle = e.target.closest('input[data-accion-reserva-estado="toggle"]');
+            if (!toggle) return;
+            await toggleEstadoReservaAdmin(toggle.dataset.id, toggle.checked, toggle);
+        });
+
         tabla.dataset.inicializado = 'true';
     }
 
     const busqueda = document.getElementById('busqueda-reservas-admin');
     if (busqueda && !busqueda.dataset.inicializado) {
-        busqueda.addEventListener('input', () => renderTablaReservasAdmin(reservasCargadas));
+        busqueda.addEventListener('input', () => {
+            resetPagination('reservasAdmin');
+            renderTablaReservasAdmin(reservasCargadas);
+        });
         busqueda.dataset.inicializado = 'true';
     }
 
     const filtroEstado = document.getElementById('filtro-estado-reservas-admin');
     if (filtroEstado && !filtroEstado.dataset.inicializado) {
-        filtroEstado.addEventListener('change', () => renderTablaReservasAdmin(reservasCargadas));
+        filtroEstado.addEventListener('change', () => {
+            resetPagination('reservasAdmin');
+            renderTablaReservasAdmin(reservasCargadas);
+        });
         filtroEstado.dataset.inicializado = 'true';
     }
 }
@@ -2807,20 +3041,32 @@ function renderTablaPaquetesAdmin(lista) {
         return coincide && estado;
     });
 
+    const tablaWrap = tbody.closest('.crud-paquetes-tabla-wrap') || tbody;
+    const paginacion = getPaginatedItems(filtrados, 'paquetesAdmin');
+
     if (filtrados.length === 0) {
         tbody.innerHTML = '<tr><td colspan="8" class="mensaje-vacio">No hay paquetes que coincidan.</td></tr>';
+        renderPaginationControls('paquetesAdmin', tablaWrap, 0, 0, 1, () => renderTablaPaquetesAdmin(lista), { showSizeSelector: true });
         return;
     }
 
-    tbody.innerHTML = filtrados.map(p => {
+    tbody.innerHTML = paginacion.items.map((p, idx) => {
         const activo = Number(p.Estado) === 1;
         const cliente = p.NombreCliente ? `${p.NombreCliente} ${p.ApellidoCliente || ''}`.trim() : '-';
         const precio = p.Precio != null ? `$${Number(p.Precio).toLocaleString('es-CO')}` : '-';
+        const imgSrc = obtenerImagenPaquete(p, idx);
 
         return `
         <tr>
             <td>${escaparHtml(String(p.IDPaquete || ''))}</td>
-            <td><strong>${escaparHtml(p.NombrePaquete || '-')}</strong></td>
+            <td>
+                <div style="display:flex;align-items:center;gap:0.5rem;">
+                    <img src="${escaparHtml(imgSrc)}" alt="${escaparHtml(p.NombrePaquete || '')}"
+                         style="width:40px;height:40px;object-fit:cover;border-radius:6px;flex-shrink:0;"
+                         onerror="this.style.display='none'">
+                    <strong>${escaparHtml(p.NombrePaquete || '-')}</strong>
+                </div>
+            </td>
             <td>${escaparHtml(p.NombreHabitacion || '-')}</td>
             <td>${escaparHtml(p.NombreServicio || '-')}</td>
             <td>${escaparHtml(cliente)}</td>
@@ -2832,13 +3078,13 @@ function renderTablaPaquetesAdmin(lista) {
             </td>
             <td>
                 <div class="acciones-tabla">
+                    <button type="button" class="btn-accion-fila ${activo ? 'btn-ver' : 'btn-cancelar'}"
+                        data-accion-paquete="toggle-estado" data-id="${escaparHtml(String(p.IDPaquete))}" data-estado="${p.Estado}">
+                        ${activo ? 'Activar' : 'Desactivar'}
+                    </button>
                     <button type="button" class="btn-accion-fila btn-editar"
                         data-accion-paquete="editar" data-id="${escaparHtml(String(p.IDPaquete))}">
                         Editar
-                    </button>
-                    <button type="button" class="btn-accion-fila ${activo ? 'btn-cancelar' : 'btn-ver'}"
-                        data-accion-paquete="toggle-estado" data-id="${escaparHtml(String(p.IDPaquete))}" data-estado="${p.Estado}">
-                        ${activo ? 'Desactivar' : 'Activar'}
                     </button>
                     <button type="button" class="btn-accion-fila btn-eliminar"
                         data-accion-paquete="eliminar" data-id="${escaparHtml(String(p.IDPaquete))}">
@@ -2848,6 +3094,13 @@ function renderTablaPaquetesAdmin(lista) {
             </td>
         </tr>`;
     }).join('');
+
+    renderPaginationControls(
+        'paquetesAdmin', tablaWrap,
+        paginacion.totalItems, paginacion.totalPages, paginacion.currentPage,
+        () => renderTablaPaquetesAdmin(lista),
+        { showSizeSelector: true }
+    );
 }
 
 function renderServiciosEstadoAdmin(servicios) {
@@ -3021,14 +3274,17 @@ async function guardarPaqueteAdmin(e) {
         if (id) {
             await actualizarPaquete(id, payload);
             if (mensajeEl) { mensajeEl.textContent = 'Paquete actualizado correctamente.'; mensajeEl.className = 'crud-paquetes-mensaje exito'; }
+            if (typeof showSuccess === 'function') showSuccess(`"${nombre}" actualizado correctamente.`, 'Paquete editado');
         } else {
             await crearPaquete(payload);
             if (mensajeEl) { mensajeEl.textContent = 'Paquete creado correctamente.'; mensajeEl.className = 'crud-paquetes-mensaje exito'; }
+            if (typeof showSuccess === 'function') showSuccess(`"${nombre}" creado correctamente.`, 'Paquete creado');
         }
         await cargarPaquetesAdmin();
         setTimeout(cerrarModalPaqueteAdmin, 900);
     } catch (err) {
         if (mensajeEl) { mensajeEl.textContent = err.message || 'Error al guardar el paquete.'; mensajeEl.className = 'crud-paquetes-mensaje error'; }
+        if (typeof showError === 'function') showError(err.message || 'No se pudo guardar el paquete.', 'Error');
     } finally {
         if (btnGuardar) { btnGuardar.disabled = false; btnGuardar.textContent = 'Guardar paquete'; }
     }
@@ -3094,13 +3350,19 @@ function configurarCRUDPaquetes() {
 
     const busqueda = document.getElementById('busqueda-paquetes-admin');
     if (busqueda && !busqueda.dataset.inicializado) {
-        busqueda.addEventListener('input', () => renderTablaPaquetesAdmin(paquetesCargados));
+        busqueda.addEventListener('input', () => {
+            resetPagination('paquetesAdmin');
+            renderTablaPaquetesAdmin(paquetesCargados);
+        });
         busqueda.dataset.inicializado = 'true';
     }
 
     const filtroEstado = document.getElementById('filtro-estado-paquetes-admin');
     if (filtroEstado && !filtroEstado.dataset.inicializado) {
-        filtroEstado.addEventListener('change', () => renderTablaPaquetesAdmin(paquetesCargados));
+        filtroEstado.addEventListener('change', () => {
+            resetPagination('paquetesAdmin');
+            renderTablaPaquetesAdmin(paquetesCargados);
+        });
         filtroEstado.dataset.inicializado = 'true';
     }
 }

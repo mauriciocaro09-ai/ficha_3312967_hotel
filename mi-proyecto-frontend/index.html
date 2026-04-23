@@ -29,6 +29,12 @@
         <nav class="sidebar-nav">
             <ul>
                 <li>
+                    <a href="#" onclick="cargarSeccion('dashboard', event)">
+                        <span class="icon"><i class="fa-solid fa-gauge-high" aria-hidden="true"></i></span>
+                        <span class="text">Dashboard</span>
+                    </a>
+                </li>
+                <li>
                     <a href="#" onclick="cargarSeccion('administrar-habitaciones', event)">
                         <span class="icon"><i class="fa-solid fa-bed" aria-hidden="true"></i></span>
                         <span class="text">Administrar habitaciones</span>
@@ -82,14 +88,100 @@
 
         <!-- Contenido Principal -->
         <main>
-            <!-- Hero Section -->
-            <section class="hero">
-                <h2>Bienvenido a Hospedaje Digital</h2>
-                <p>Encuentra la habitación perfecta para tu estadía</p>
+            <!-- Dashboard Section -->
+            <section id="seccion-dashboard" class="dashboard-section">
+                <!-- Header -->
+                <div class="dashboard-header">
+                    <div class="dashboard-greeting">
+                        <h2 class="dashboard-title">Panel de Administración</h2>
+                        <p class="dashboard-subtitle" id="dashboard-fecha">Cargando fecha...</p>
+                    </div>
+                    <div class="dashboard-status">
+                        <span class="status-dot"></span>
+                        <span>Sistema en línea</span>
+                    </div>
+                </div>
+
+                <!-- KPI Cards -->
+                <div class="dashboard-kpis">
+                    <article class="kpi-card kpi-primary">
+                        <div class="kpi-icon"><i class="fa-solid fa-calendar-check"></i></div>
+                        <div class="kpi-content">
+                            <span class="kpi-label">Total Reservas</span>
+                            <strong class="kpi-value" id="dash-total-reservas">—</strong>
+                        </div>
+                    </article>
+                    <article class="kpi-card kpi-success">
+                        <div class="kpi-icon"><i class="fa-solid fa-coins"></i></div>
+                        <div class="kpi-content">
+                            <span class="kpi-label">Ingresos Activos</span>
+                            <strong class="kpi-value" id="dash-ingresos">—</strong>
+                        </div>
+                    </article>
+                    <article class="kpi-card kpi-info">
+                        <div class="kpi-icon"><i class="fa-solid fa-bed"></i></div>
+                        <div class="kpi-content">
+                            <span class="kpi-label">Habitaciones</span>
+                            <strong class="kpi-value" id="dash-habitaciones">—</strong>
+                        </div>
+                    </article>
+                    <article class="kpi-card kpi-warning">
+                        <div class="kpi-icon"><i class="fa-solid fa-concierge-bell"></i></div>
+                        <div class="kpi-content">
+                            <span class="kpi-label">Servicios Activos</span>
+                            <strong class="kpi-value" id="dash-servicios">—</strong>
+                        </div>
+                    </article>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="dashboard-acciones-rapidas">
+                    <h3 class="dashboard-section-title">
+                        <i class="fa-solid fa-bolt"></i> Acciones Rápidas
+                    </h3>
+                    <div class="acciones-rapidas-grid">
+                        <button type="button" class="accion-rapida-card" onclick="cargarSeccion('administrar-habitaciones', event)">
+                            <i class="fa-solid fa-bed"></i>
+                            <span>Habitaciones</span>
+                        </button>
+                        <button type="button" class="accion-rapida-card" onclick="cargarSeccion('administrar-servicios', event)">
+                            <i class="fa-solid fa-concierge-bell"></i>
+                            <span>Servicios</span>
+                        </button>
+                        <button type="button" class="accion-rapida-card" onclick="cargarSeccion('administrar-reservas', event)">
+                            <i class="fa-solid fa-calendar-check"></i>
+                            <span>Reservas</span>
+                        </button>
+                        <button type="button" class="accion-rapida-card" onclick="cargarSeccion('administrar-paquetes', event)">
+                            <i class="fa-solid fa-box-open"></i>
+                            <span>Paquetes</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Rankings -->
+                <div class="dashboard-rankings">
+                    <div class="ranking-card">
+                        <h3 class="dashboard-section-title">
+                            <i class="fa-solid fa-trophy"></i> Habitaciones más reservadas
+                        </h3>
+                        <ul class="ranking-list" id="dash-habitaciones-top">
+                            <li class="ranking-empty">Cargando estadísticas...</li>
+                        </ul>
+                    </div>
+                    <div class="ranking-card">
+                        <h3 class="dashboard-section-title">
+                            <i class="fa-solid fa-star"></i> Servicios más vendidos
+                        </h3>
+                        <ul class="ranking-list" id="dash-servicios-top">
+                            <li class="ranking-empty">Cargando estadísticas...</li>
+                        </ul>
+                    </div>
+                </div>
             </section>
 
             <!-- Sección CRUD de Habitaciones -->
-            <section id="seccion-administrar-habitaciones" class="crud-habitaciones-section">
+            <section id="seccion-administrar-habitaciones" class="crud-habitaciones-section hidden">
                 <div class="crud-habitaciones-toolbar">
                     <button type="button" class="btn-accion-crud btn-accion-principal" id="btn-nueva-habitacion-admin">+ NUEVA HABITACION</button>
                     <div id="mensaje-habitacion-admin" class="crud-habitaciones-mensaje" aria-live="polite"></div>

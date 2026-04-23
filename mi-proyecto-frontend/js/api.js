@@ -403,6 +403,15 @@ async function obtenerClientes() {
     }
 }
 
+async function obtenerEstadisticasDashboard() {
+    try {
+        return await requestJson('/dashboard/estadisticas');
+    } catch (error) {
+        apiLogger.error('Error al obtener estadísticas del dashboard:', error.message);
+        return null;
+    }
+}
+
 async function toggleEstadoServicio(id, estado) {
     apiLogger.log('Cambiando estado de servicio:', id, '->', estado);
     try {
