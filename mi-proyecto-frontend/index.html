@@ -130,8 +130,8 @@
                                         <th>Imagen</th>
                                         <th>Nombre</th>
                                         <th>Costo</th>
-                                        <th>Estado</th>
                                         <th>Descripción</th>
+                                        <th>Estado</th>
                                         <th>Acciones</th>
                                     </tr>
                                 </thead>
@@ -246,8 +246,8 @@
                                         <th>Duración (min)</th>
                                         <th>Personas</th>
                                         <th>Costo</th>
-                                        <th>Estado</th>
                                         <th>Descripción</th>
+                                        <th>Estado</th>
                                         <th>Acciones</th>
                                     </tr>
                                 </thead>
@@ -485,19 +485,31 @@
         const closeBtn = document.getElementById('sidebar-close');
         const overlay = document.getElementById('sidebar-overlay');
         const mainWrapper = document.getElementById('main-wrapper');
+        const SIDEBAR_STATE_KEY = 'hospedaje_sidebar_open';
+
+        function aplicarEstadoSidebar(estaAbierto, persistir = true) {
+            sidebar.classList.toggle('open', estaAbierto);
+            overlay.classList.toggle('active', estaAbierto);
+            mainWrapper.classList.toggle('sidebar-open', estaAbierto);
+
+            if (persistir) {
+                localStorage.setItem(SIDEBAR_STATE_KEY, estaAbierto ? '1' : '0');
+            }
+        }
 
         // Abrir sidebar
         function openSidebar() {
-            sidebar.classList.add('open');
-            overlay.classList.add('active');
-            mainWrapper.classList.add('sidebar-open');
+            aplicarEstadoSidebar(true);
         }
 
         // Cerrar sidebar
         function closeSidebar() {
-            sidebar.classList.remove('open');
-            overlay.classList.remove('active');
-            mainWrapper.classList.remove('sidebar-open');
+            aplicarEstadoSidebar(false);
+        }
+
+        function restaurarEstadoSidebar() {
+            // Al recargar la vista principal, el sidebar siempre inicia abierto.
+            aplicarEstadoSidebar(true);
         }
 
         // Event listeners
@@ -512,6 +524,8 @@
         if (overlay) {
             overlay.addEventListener('click', closeSidebar);
         }
+
+        restaurarEstadoSidebar();
 
         // Cerrar sidebar con tecla Escape
         document.addEventListener('keydown', (e) => {
@@ -562,9 +576,6 @@
                     }
                 }
             }
-            
-            // Cerrar el sidebar después de seleccionar
-            closeSidebar();
         }
     </script>
 </body>

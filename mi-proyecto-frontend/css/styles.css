@@ -360,7 +360,7 @@ header nav a:hover {
     align-items: flex-start;
     margin-bottom: var(--spacing-lg);
     padding: var(--spacing-lg);
-    background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+    background: linear-gradient(135deg, #ffffff 0%, #fff5f0 100%);
     border: 1px solid #e2e8f0;
     border-radius: var(--border-radius-lg);
     box-shadow: var(--shadow-sm);
@@ -368,7 +368,7 @@ header nav a:hover {
 
 .crud-habitaciones-header h3 {
     font-size: var(--font-size-xxl);
-    color: var(--color-primary);
+    color: #c2410c;
     margin-bottom: var(--spacing-xs);
 }
 
@@ -444,7 +444,7 @@ header nav a:hover {
 
 .crud-habitaciones-summary strong {
     font-size: 2rem;
-    color: var(--color-primary);
+    color: #c2410c;
 }
 
 .crud-habitaciones-layout {
@@ -463,7 +463,7 @@ header nav a:hover {
 
 .crud-habitaciones-panel h4 {
     font-size: var(--font-size-xl);
-    color: var(--color-primary);
+    color: #c2410c;
     margin-bottom: var(--spacing-sm);
 }
 
@@ -516,8 +516,8 @@ header nav a:hover {
 .crud-habitaciones-filtros input:focus,
 .crud-habitaciones-filtros select:focus {
     outline: none;
-    border-color: var(--color-secondary);
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    border-color: #c2410c;
+    box-shadow: 0 0 0 3px rgba(194, 65, 12, 0.12);
 }
 
 .crud-habitaciones-form-actions {
@@ -661,7 +661,7 @@ body.modal-open {
 
 .crud-habitaciones-tabla thead th {
     background: #f8fafc;
-    color: var(--color-primary);
+    color: #c2410c;
     text-align: left;
     padding: 1rem;
     font-size: 0.8rem;
@@ -675,6 +675,11 @@ body.modal-open {
     border-bottom: 1px solid #edf2f7;
     vertical-align: top;
     color: var(--color-text);
+}
+
+.crud-habitaciones-tabla tbody td:nth-child(5),
+.crud-servicios-tabla tbody td:nth-child(6) {
+    vertical-align: middle;
 }
 
 .crud-habitaciones-tabla tbody tr:hover {
@@ -703,7 +708,7 @@ body.modal-open {
 
 .crud-habitaciones-nombre {
     font-weight: 700;
-    color: var(--color-primary);
+    color: #c2410c;
     margin-bottom: 0.35rem;
 }
 
@@ -1543,7 +1548,7 @@ body.modal-open {
 
 .crud-clientes-summary strong {
     font-size: 2rem;
-    color: #1d4ed8;
+    color: #c2410c;
 }
 
 .crud-clientes-layout {
@@ -1569,7 +1574,7 @@ body.modal-open {
 
 .crud-clientes-lista-top h4 {
     font-size: var(--font-size-xl);
-    color: #1d4ed8;
+    color: #c2410c;
     margin-bottom: var(--spacing-xs);
 }
 
@@ -1610,8 +1615,8 @@ body.modal-open {
 .crud-clientes-filtros input:focus,
 .crud-clientes-filtros select:focus {
     outline: none;
-    border-color: #1d4ed8;
-    box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.12);
+    border-color: #c2410c;
+    box-shadow: 0 0 0 3px rgba(194, 65, 12, 0.12);
 }
 
 .crud-clientes-form-actions {
@@ -1656,13 +1661,13 @@ body.modal-open {
 }
 
 .crud-clientes-tabla thead th {
-    background: #eff6ff;
-    color: #1d4ed8;
+    background: #f8fafc;
+    color: #c2410c;
     text-align: left;
     font-weight: 700;
     letter-spacing: 0.01em;
     padding: 0.9rem;
-    border-bottom: 1px solid #dbeafe;
+    border-bottom: 1px solid #e2e8f0;
 }
 
 .crud-clientes-tabla td {

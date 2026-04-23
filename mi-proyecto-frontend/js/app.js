@@ -1535,6 +1535,7 @@ const renderizarHabitacionesAdmin = () => {
                     <div class="crud-habitaciones-nombre">${escaparHtml(habitacion.NombreHabitacion || 'Sin nombre')}</div>
                 </td>
                 <td><strong>${formatearCostoHabitacion(habitacion.Costo)}</strong></td>
+                <td class="crud-habitaciones-descripcion">${escaparHtml(habitacion.Descripcion || 'Sin descripción')}</td>
                 <td>
                     <div class="crud-estado-control">
                         <label class="switch-estado" for="${escaparHtml(switchId)}">
@@ -1550,7 +1551,6 @@ const renderizarHabitacionesAdmin = () => {
                         </label>
                     </div>
                 </td>
-                <td class="crud-habitaciones-descripcion">${escaparHtml(habitacion.Descripcion || 'Sin descripción')}</td>
                 <td>
                     <div class="crud-habitaciones-acciones">
                         ${obtenerBotonIcono('ver', 'btn-mini-ver', 'Ver detalle', `Ver detalle de ${habitacion.NombreHabitacion || 'habitación'}`, 'accion-habitacion', idHabitacion)}
@@ -2032,14 +2032,6 @@ function cargarSeccion(seccion, event) {
         } else if (seccion === 'administrar-clientes') {
             cargarClientesAdmin();
         }
-        
-        // Cerrar sidebar en móviles
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('sidebar-overlay');
-        if (sidebar && window.innerWidth <= 768) {
-            sidebar.classList.remove('active');
-            if (overlay) overlay.classList.remove('active');
-        }
     }
 }
 
@@ -2203,6 +2195,7 @@ const renderizarServiciosAdmin = () => {
                 <td><strong>${servicio.Duracion || '—'}</strong></td>
                 <td>${servicio.CantidadMaximaPersonas || '—'}</td>
                 <td><strong>${formatearCostoServicio(servicio.Costo)}</strong></td>
+                <td class="crud-servicios-descripcion">${escaparHtml(servicio.Descripcion || 'Sin descripción')}</td>
                 <td>
                     <div class="crud-estado-control">
                         <label class="switch-estado-servicio" for="${escaparHtml(switchId)}">
@@ -2218,7 +2211,6 @@ const renderizarServiciosAdmin = () => {
                         </label>
                     </div>
                 </td>
-                <td class="crud-servicios-descripcion">${escaparHtml(servicio.Descripcion || 'Sin descripción')}</td>
                 <td>
                     <div class="crud-servicios-acciones">
                         ${obtenerBotonIcono('ver', 'btn-mini-ver', 'Ver detalle', `Ver detalle de ${servicio.NombreServicio || 'servicio'}`, 'accion-servicio', idServicio)}
