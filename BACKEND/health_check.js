@@ -10,6 +10,7 @@ const backendHost = 'localhost';
 const backendBaseUrl = `http://${backendHost}:${backendPort}`;
 
 const frontendCandidates = [
+  path.resolve(__dirname, '..', 'FRONTEND'),
   path.resolve(__dirname, '..', 'mi_proyecto_frontend'),
   path.resolve(__dirname, '..', 'mi-proyecto-frontend')
 ];
@@ -153,7 +154,7 @@ function checkFrontendIntegration() {
 
   const frontendPath = findFrontendPath();
   if (!frontendPath) {
-    printResult(false, 'Frontend folder not found (mi_proyecto_frontend or mi-proyecto-frontend)');
+    printResult(false, 'Frontend folder not found (FRONTEND, mi_proyecto_frontend or mi-proyecto-frontend)');
     return false;
   }
 
