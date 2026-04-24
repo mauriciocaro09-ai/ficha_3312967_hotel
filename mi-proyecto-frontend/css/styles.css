@@ -423,8 +423,6 @@ header nav a:hover {
     justify-content: space-between;
     gap: var(--spacing-md);
     margin-bottom: var(--spacing-md);
-    position: relative;
-    z-index: 1205;
 }
 
 .crud-habitaciones-summary article {
@@ -625,6 +623,11 @@ header nav a:hover {
 
 body.modal-open {
     overflow: hidden;
+}
+
+/* Mantiene visible el sidebar cuando se abre un modal CRUD. */
+body.modal-open .sidebar {
+    z-index: 1302;
 }
 
 .crud-habitaciones-lista-top {
@@ -955,8 +958,6 @@ body.modal-open {
     justify-content: space-between;
     gap: var(--spacing-md);
     margin-bottom: var(--spacing-md);
-    position: relative;
-    z-index: 1205;
 }
 
 .crud-servicios-summary article {
@@ -1889,6 +1890,10 @@ form button[type="submit"]:hover {
 .sidebar-toggle:hover {
     background-color: var(--color-secondary);
     transform: scale(1.05);
+}
+.sidebar-toggle.is-hidden {
+    opacity: 0;
+    pointer-events: none;
 }
 
 /* Hamburger icon */

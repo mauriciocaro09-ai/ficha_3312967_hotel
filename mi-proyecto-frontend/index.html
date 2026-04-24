@@ -31,19 +31,19 @@
                 <li>
                     <a href="#" onclick="cargarSeccion('administrar-habitaciones', event)">
                         <span class="icon"><i class="fa-solid fa-bed" aria-hidden="true"></i></span>
-                        <span class="text">Administrar habitaciones</span>
+                        <span class="text">Habitaciones</span>
                     </a>
                 </li>
                 <li>
                     <a href="#" onclick="cargarSeccion('administrar-servicios', event)">
                         <span class="icon"><i class="fa-solid" aria-hidden="true">&#xf7b6;</i></span>
-                        <span class="text">Administrar servicios</span>
+                        <span class="text">Servicios</span>
                     </a>
                 </li>
                 <li>
                     <a href="#" onclick="cargarSeccion('administrar-clientes', event)">
                         <span class="icon"><i class="fa-solid fa-users" aria-hidden="true"></i></span>
-                        <span class="text">Administrar clientes</span>
+                        <span class="text">Clientes</span>
                     </a>
                 </li>
 
@@ -64,14 +64,6 @@
         <header>
             <nav>
                 <h1><i class="fa-solid fa-hotel" aria-hidden="true"></i> Hospedaje Digital</h1>
-                <ul>
-                    <li><a href="index.html">Inicio</a></li>
-                    <li><a href="pages/nosotros.html">Nosotros</a></li>
-                    <li><a href="pages/contacto.html">Contacto</a></li>
-                </ul>
-                <button id="toggle-contraste" class="btn-contraste" type="button" aria-pressed="false">
-                    Alto contraste: OFF
-                </button>
             </nav>
         </header>
 
@@ -108,11 +100,6 @@
                 <div class="crud-habitaciones-layout">
                     <section class="crud-habitaciones-panel crud-habitaciones-panel-lista">
                         <div class="crud-habitaciones-lista-top">
-                            <div>
-                                <h4>Listado</h4>
-                                <p class="crud-habitaciones-note">Busca por nombre, descripción o estado y usa las acciones por fila.</p>
-                            </div>
-
                             <div class="crud-habitaciones-filtros">
                                 <input type="search" id="busqueda-habitaciones-admin" placeholder="Buscar habitación">
                                 <select id="filtro-estado-habitaciones-admin" aria-label="Filtrar habitaciones por estado">
@@ -223,11 +210,6 @@
                 <div class="crud-servicios-layout">
                     <section class="crud-servicios-panel crud-servicios-panel-lista">
                         <div class="crud-servicios-lista-top">
-                            <div>
-                                <h4>Listado</h4>
-                                <p class="crud-servicios-note">Busca por nombre, descripción o estado y usa las acciones por fila.</p>
-                            </div>
-
                             <div class="crud-servicios-filtros">
                                 <input type="search" id="busqueda-servicios-admin" placeholder="Buscar servicio">
                                 <select id="filtro-estado-servicios-admin" aria-label="Filtrar servicios por estado">
@@ -287,11 +269,6 @@
                 <div class="crud-clientes-layout">
                     <section class="crud-clientes-panel crud-clientes-panel-lista">
                         <div class="crud-clientes-lista-top">
-                            <div>
-                                <h4>Listado de clientes</h4>
-                                <p class="crud-clientes-note">Datos reales obtenidos desde la tabla cliente en MySQL.</p>
-                            </div>
-
                             <div class="crud-clientes-filtros">
                                 <input type="search" id="busqueda-clientes-admin" placeholder="Buscar por documento, nombre, email o teléfono">
                                 <select id="filtro-estado-clientes-admin" aria-label="Filtrar clientes por estado">
@@ -487,10 +464,17 @@
         const mainWrapper = document.getElementById('main-wrapper');
         const SIDEBAR_STATE_KEY = 'hospedaje_sidebar_open';
 
+        function debeUsarOverlay() {
+            return window.innerWidth <= 768;
+        }
+
         function aplicarEstadoSidebar(estaAbierto, persistir = true) {
             sidebar.classList.toggle('open', estaAbierto);
-            overlay.classList.toggle('active', estaAbierto);
+            overlay.classList.toggle('active', estaAbierto && debeUsarOverlay());
             mainWrapper.classList.toggle('sidebar-open', estaAbierto);
+            if (toggle) {
+                toggle.classList.toggle('is-hidden', estaAbierto);
+            }
 
             if (persistir) {
                 localStorage.setItem(SIDEBAR_STATE_KEY, estaAbierto ? '1' : '0');
@@ -525,6 +509,12 @@
             overlay.addEventListener('click', closeSidebar);
         }
 
+        window.addEventListener('resize', () => {
+            if (sidebar.classList.contains('open')) {
+                aplicarEstadoSidebar(true, false);
+            }
+        });
+
         restaurarEstadoSidebar();
 
         // Cerrar sidebar con tecla Escape
@@ -534,49 +524,6 @@
             }
         });
 
-        // Función para cargar una sección desde el sidebar
-        function cargarSeccion(seccion, event) {
-            if (event) {
-                event.preventDefault();
-            }
-            
-            const secciones = [
-                'seccion-administrar-habitaciones',
-                'seccion-administrar-servicios',
-                'seccion-administrar-clientes'
-            ];
-
-            // Ocultar todas las secciones usando la clase helper
-            secciones.forEach((seccionId) => {
-                const elemento = document.getElementById(seccionId);
-                if (elemento) {
-                    elemento.classList.add('hidden');
-                }
-            });
-            
-            // Mostrar la sección seleccionada
-            const seccionId = 'seccion-' + seccion;
-            const seccionElement = document.getElementById(seccionId);
-            
-            if (seccionElement) {
-                seccionElement.classList.remove('hidden');
-                
-                // Cargar los datos según la sección
-                if (seccion === 'administrar-habitaciones') {
-                    if (typeof cargarHabitacionesAdmin === 'function') {
-                        cargarHabitacionesAdmin();
-                    }
-                } else if (seccion === 'administrar-servicios') {
-                    if (typeof cargarServiciosAdmin === 'function') {
-                        cargarServiciosAdmin();
-                    }
-                } else if (seccion === 'administrar-clientes') {
-                    if (typeof cargarClientesAdmin === 'function') {
-                        cargarClientesAdmin();
-                    }
-                }
-            }
-        }
     </script>
 </body>
 </html>

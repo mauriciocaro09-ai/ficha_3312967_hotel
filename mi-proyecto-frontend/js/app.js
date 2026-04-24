@@ -316,33 +316,8 @@ const normalizarEstadoCliente = (estado) => {
 const obtenerIdCliente = (cliente) => cliente?.NroDocumento || '';
 
 const mostrarMensajeClienteAdmin = (mensaje, tipo = 'info') => {
-    const elementos = [
-        document.getElementById('mensaje-cliente-admin'),
-        document.getElementById('mensaje-cliente-admin-modal')
-    ].filter(Boolean);
-
-    if (!elementos.length) return;
-
-    elementos.forEach((elemento) => {
-        elemento.textContent = mensaje;
-        elemento.className = 'crud-clientes-mensaje';
-        elemento.style.color = '';
-        elemento.style.background = '';
-        elemento.style.border = '';
-        elemento.style.fontWeight = '';
-
-        if (tipo !== 'info') {
-            elemento.classList.add(tipo);
-        }
-
-        if (tipo === 'ok' || tipo === 'exito') {
-            elemento.style.setProperty('color', '#14532d', 'important');
-            elemento.style.setProperty('background', 'rgba(20, 83, 45, 0.16)', 'important');
-            elemento.style.setProperty('border', '1px solid rgba(20, 83, 45, 0.45)', 'important');
-            elemento.style.setProperty('font-weight', '700', 'important');
-            elemento.classList.add('exito');
-        }
-    });
+    // Avisos deshabilitados
+    return;
 };
 
 const abrirModalClienteAdmin = () => {
@@ -768,6 +743,15 @@ function configurarClientesAdmin() {
     if (botonNuevo && !botonNuevo.dataset.clientesAdminInicializado) {
         botonNuevo.addEventListener('click', () => {
             limpiarFormularioClienteAdmin(false);
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            const mainWrapper = document.getElementById('main-wrapper');
+            if (sidebar) sidebar.classList.add('open');
+            if (mainWrapper) mainWrapper.classList.add('sidebar-open');
+            if (overlay && window.innerWidth <= 768) {
+                overlay.classList.add('active');
+            }
+            localStorage.setItem('hospedaje_sidebar_open', '1');
             abrirModalClienteAdmin();
         });
         botonNuevo.dataset.clientesAdminInicializado = 'true';
@@ -1246,35 +1230,8 @@ const obtenerImagenParaPayload = (habitacion) => {
 };
 
 const mostrarMensajeHabitacionAdmin = (texto, tipo = 'info') => {
-    const mensajes = [
-        document.getElementById('mensaje-habitacion-admin'),
-        document.getElementById('mensaje-habitacion-admin-modal')
-    ].filter(Boolean);
-
-    if (!mensajes.length) return;
-
-    mensajes.forEach((mensaje) => {
-        mensaje.textContent = texto || '';
-        mensaje.className = 'crud-habitaciones-mensaje';
-        mensaje.style.color = '';
-        mensaje.style.background = '';
-        mensaje.style.border = '';
-        mensaje.style.fontWeight = '';
-
-        if (tipo === 'ok') {
-            mensaje.classList.add('exito');
-        } else if (tipo === 'error') {
-            mensaje.classList.add('error');
-        }
-
-        if (tipo === 'ok' || tipo === 'exito') {
-            mensaje.style.setProperty('color', '#14532d', 'important');
-            mensaje.style.setProperty('background', 'rgba(20, 83, 45, 0.16)', 'important');
-            mensaje.style.setProperty('border', '1px solid rgba(20, 83, 45, 0.45)', 'important');
-            mensaje.style.setProperty('font-weight', '700', 'important');
-            mensaje.classList.add('exito');
-        }
-    });
+    // Avisos deshabilitados
+    return;
 };
 
 const esErrorDuplicadoBackend = (mensaje) => {
@@ -1430,24 +1387,8 @@ const aplicarModoContraste = (activo) => {
 };
 
 function configurarModoContraste() {
-    const boton = document.getElementById('toggle-contraste');
-    const preferenciaGuardada = localStorage.getItem(CLAVE_CONTRASTE_ALTO) === 'true';
-
-    aplicarModoContraste(preferenciaGuardada);
-
-    if (!boton || boton.dataset.contrasteInicializado) {
-        return;
-    }
-
-    boton.addEventListener('click', () => {
-        const estaActivo = document.body.classList.contains('high-contrast');
-        const nuevoEstado = !estaActivo;
-
-        aplicarModoContraste(nuevoEstado);
-        localStorage.setItem(CLAVE_CONTRASTE_ALTO, nuevoEstado ? 'true' : 'false');
-    });
-
-    boton.dataset.contrasteInicializado = 'true';
+    // Aplicar contraste al 100% de forma permanente
+    document.body.classList.add('high-contrast');
 }
 
 const actualizarResumenHabitacionesAdmin = (habitaciones) => {
@@ -2012,6 +1953,24 @@ function cargarSeccion(seccion, event) {
         event.preventDefault();
     }
 
+    const mantenerSidebarAbierto = () => {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        const mainWrapper = document.getElementById('main-wrapper');
+
+        if (sidebar) sidebar.classList.add('open');
+        if (overlay && window.innerWidth <= 768) {
+            overlay.classList.add('active');
+        } else if (overlay) {
+            overlay.classList.remove('active');
+        }
+        if (mainWrapper) mainWrapper.classList.add('sidebar-open');
+
+        localStorage.setItem('hospedaje_sidebar_open', '1');
+    };
+
+    mantenerSidebarAbierto();
+
     // Ocultar todas las secciones
     document.querySelectorAll('[id^="seccion-"]').forEach((section) => {
         section.classList.add('hidden');
@@ -2032,6 +1991,9 @@ function cargarSeccion(seccion, event) {
         } else if (seccion === 'administrar-clientes') {
             cargarClientesAdmin();
         }
+
+        // Garantiza que el sidebar no se cierre al navegar entre opciones.
+        mantenerSidebarAbierto();
     }
 }
 
@@ -2056,33 +2018,8 @@ const formatearCostoServicio = (costo) => {
 };
 
 const mostrarMensajeServicioAdmin = (mensaje, tipo = 'info') => {
-    const elementos = [
-        document.getElementById('mensaje-servicio-admin'),
-        document.getElementById('mensaje-servicio-admin-modal')
-    ].filter(Boolean);
-
-    if (!elementos.length) return;
-
-    elementos.forEach((elemento) => {
-        elemento.textContent = mensaje;
-        elemento.className = 'crud-servicios-mensaje';
-        elemento.style.color = '';
-        elemento.style.background = '';
-        elemento.style.border = '';
-        elemento.style.fontWeight = '';
-
-        if (tipo !== 'info') {
-            elemento.classList.add(tipo);
-        }
-
-        if (tipo === 'ok' || tipo === 'exito') {
-            elemento.style.setProperty('color', '#14532d', 'important');
-            elemento.style.setProperty('background', 'rgba(20, 83, 45, 0.16)', 'important');
-            elemento.style.setProperty('border', '1px solid rgba(20, 83, 45, 0.45)', 'important');
-            elemento.style.setProperty('font-weight', '700', 'important');
-            elemento.classList.add('exito');
-        }
-    });
+    // Avisos deshabilitados
+    return;
 };
 
 const abrirModalServicioAdmin = () => {
