@@ -2302,6 +2302,7 @@ footer {
     letter-spacing: 0.02em;
 }
 .badge-activa    { background: var(--color-success-light); color: var(--color-success-dark); }
+.badge-pendiente { background: #fef9c3; color: #854d0e; }
 .badge-completada{ background: #dbeafe; color: #1e40af; }
 .badge-cancelada { background: var(--color-error-light);  color: var(--color-error-dark); }
 
@@ -2844,53 +2845,130 @@ footer {
     margin-top: var(--spacing-sm);
 }
 
+.servicios-botones-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: .6rem;
+}
+
 .servicio-toggle-btn {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 0.2rem;
-    padding: 0.5rem 1rem;
-    background: var(--color-white);
+    gap: 0;
+    padding: 0;
+    background: #f8fafc;
     border: 2px solid var(--color-border);
-    border-radius: var(--border-radius);
+    border-radius: 10px;
     cursor: pointer;
-    transition: border-color 0.18s, background 0.18s, color 0.18s;
+    transition: border-color .18s, background .18s, box-shadow .18s;
     font-family: var(--font-family);
     outline: none;
-    min-width: 110px;
+    text-align: left;
+    overflow: hidden;
 }
 .servicio-toggle-btn:hover {
-    border-color: var(--color-primary);
+    border-color: #94a3b8;
+    background: #f1f5f9;
+    box-shadow: 0 2px 8px rgba(0,0,0,.07);
 }
 .servicio-toggle-btn:focus-visible {
-    box-shadow: 0 0 0 3px rgba(15,61,62,0.25);
+    box-shadow: 0 0 0 3px rgba(27,67,50,.2);
 }
 .servicio-toggle-btn.seleccionado {
-    border-color: var(--color-primary);
-    background: var(--color-primary-light);
-    color: var(--color-primary-dark);
+    border-color: #1b4332;
+    background: #f0fdf4;
 }
-.servicio-btn-nombre {
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-semibold);
-    color: inherit;
+
+/* Main row: icon + info + price */
+.svc-main {
+    display: flex;
+    align-items: center;
+    gap: .65rem;
+    padding: .75rem .9rem;
 }
-.servicio-btn-precio {
-    font-size: var(--font-size-xs);
-    color: var(--color-text-light);
+.svc-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    background: #e2e8f0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .9rem;
+    color: #64748b;
+    flex-shrink: 0;
+    transition: background .18s, color .18s;
 }
-.servicio-btn-desc {
-    font-size: 11px;
-    color: var(--color-text-light);
-    text-align: center;
-    line-height: 1.3;
-    max-width: 150px;
+.servicio-toggle-btn.seleccionado .svc-icon {
+    background: #dcfce7;
+    color: #16a34a;
 }
-.servicio-toggle-btn.seleccionado .servicio-btn-precio {
-    color: var(--color-primary);
+.svc-info { flex: 1; min-width: 0; }
+.svc-nombre {
+    display: block;
+    font-size: .83rem;
+    font-weight: 700;
+    color: #0f172a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
-.servicio-toggle-btn.seleccionado .servicio-btn-desc {
-    color: var(--color-primary);
+.svc-desc {
+    display: block;
+    font-size: .71rem;
+    color: #64748b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: .1rem;
+}
+.svc-precio {
+    font-size: .82rem;
+    font-weight: 700;
+    color: #e07b39;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* Detail panel — hidden, appears when selected */
+.svc-detalle {
+    display: none;
+    flex-direction: column;
+    gap: .28rem;
+    padding: .55rem .9rem .7rem;
+    border-top: 1px solid #d1fae5;
+    background: rgba(27,67,50,.04);
+}
+.servicio-toggle-btn.seleccionado .svc-detalle {
+    display: flex;
+}
+.svc-det-item {
+    display: flex;
+    align-items: flex-start;
+    gap: .42rem;
+    font-size: .72rem;
+    color: #374151;
+    line-height: 1.4;
+}
+.svc-det-item i {
+    width: 13px;
+    font-size: .67rem;
+    color: #1b4332;
+    flex-shrink: 0;
+    margin-top: .15rem;
+}
+.svc-det-incluye { color: #065f46; }
+.svc-det-incluye i { color: #10b981; }
+
+/* Selected badge */
+.svc-check-badge {
+    display: none;
+    align-items: center;
+    gap: .3rem;
+    font-size: .7rem;
+    font-weight: 700;
+    color: #16a34a;
+    padding: .3rem .9rem .45rem;
+}
+.servicio-toggle-btn.seleccionado .svc-check-badge {
+    display: flex;
 }
 
 /* --- Imagen en tarjeta de paquete --- */
@@ -3289,6 +3367,28 @@ footer {
     color: var(--color-text-light);
     font-style: italic;
     justify-content: center;
+}
+
+/* Gráficas del dashboard */
+.dashboard-charts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-lg);
+}
+
+.chart-card {
+    background: var(--color-white);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid #e2e8f0;
+}
+
+.chart-container {
+    position: relative;
+    height: 260px;
+    margin-top: var(--spacing-md);
 }
 
 /* Dashboard responsive */

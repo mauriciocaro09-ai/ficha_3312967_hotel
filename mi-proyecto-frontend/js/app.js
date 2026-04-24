@@ -1312,9 +1312,7 @@ async function eliminarHabitacionAdmin(id) {
     const habitacion = habitacionesAdminCargadas.find((item) => String(obtenerIdHabitacion(item)) === String(id));
     const nombre = habitacion?.NombreHabitacion || `ID ${id}`;
 
-    if (!confirm(`¿Seguro que deseas eliminar la habitación ${nombre}?`)) {
-        return;
-    }
+    if (!await confirmarAccion(`¿Seguro que deseas eliminar la habitación "${nombre}"?`, 'Eliminar habitación')) return;
 
     try {
         mostrarMensajeHabitacionAdmin(`Eliminando ${nombre}...`);
@@ -1495,6 +1493,76 @@ function verDetalles(id) {
 // DASHBOARD
 // ============================================
 
+let _dashChartEstados = null;
+let _dashChartMeses = null;
+
+function renderizarGraficasDashboard(reservas) {
+    const lista = Array.isArray(reservas) ? reservas : [];
+
+    // --- Donut: por estado ---
+    const conteos = [0, 0, 0];
+    lista.forEach(r => {
+        const e = Number(r.IdEstadoReserva);
+        if (e === 1) conteos[0]++;
+        else if (e === 2) conteos[1]++;
+        else if (e === 3) conteos[2]++;
+    });
+
+    const ctxE = document.getElementById('dash-chart-estados');
+    if (ctxE) {
+        if (_dashChartEstados) _dashChartEstados.destroy();
+        _dashChartEstados = new Chart(ctxE, {
+            type: 'doughnut',
+            data: {
+                labels: ['Activo', 'Pendiente', 'Cancelado'],
+                datasets: [{ data: conteos, backgroundColor: ['#22c55e', '#f59e0b', '#ef4444'], borderWidth: 0 }]
+            },
+            options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+        });
+    }
+
+    // --- Barras: últimos 6 meses ---
+    const ahora = new Date();
+    const meses = Array.from({ length: 6 }, (_, i) => {
+        const d = new Date(ahora.getFullYear(), ahora.getMonth() - (5 - i), 1);
+        return {
+            label: d.toLocaleDateString('es-CO', { month: 'short', year: '2-digit' }),
+            key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+            total: 0
+        };
+    });
+
+    lista.forEach(r => {
+        const f = new Date(r.FechaInicio);
+        const key = `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, '0')}`;
+        const m = meses.find(x => x.key === key);
+        if (m) m.total++;
+    });
+
+    const ctxM = document.getElementById('dash-chart-meses');
+    if (ctxM) {
+        if (_dashChartMeses) _dashChartMeses.destroy();
+        _dashChartMeses = new Chart(ctxM, {
+            type: 'bar',
+            data: {
+                labels: meses.map(m => m.label),
+                datasets: [{
+                    label: 'Reservas',
+                    data: meses.map(m => m.total),
+                    backgroundColor: '#2d6a4f',
+                    borderRadius: 6,
+                    borderSkipped: false
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+            }
+        });
+    }
+}
+
 async function cargarDashboard() {
     const fechaEl = document.getElementById('dashboard-fecha');
     if (fechaEl) {
@@ -1508,10 +1576,11 @@ async function cargarDashboard() {
     }
 
     try {
-        const [stats, habs, servs] = await Promise.all([
+        const [stats, habs, servs, reservas] = await Promise.all([
             obtenerEstadisticasDashboard(),
             obtenerHabitaciones(),
-            obtenerServicios()
+            obtenerServicios(),
+            obtenerReservas()
         ]);
 
         const totalReservasEl = document.getElementById('dash-total-reservas');
@@ -1558,6 +1627,8 @@ async function cargarDashboard() {
                 servTop.innerHTML = '<li class="ranking-empty">Sin servicios vendidos aún</li>';
             }
         }
+
+        renderizarGraficasDashboard(reservas);
     } catch (error) {
         console.error('Error cargando dashboard:', error);
     }
@@ -1584,14 +1655,18 @@ function cargarSeccion(seccion, event) {
     if (elementoSeccion) {
         elementoSeccion.classList.remove('hidden');
         
-        // Cargar datos según la sección
+        // Cargar datos según la sección (inicialización perezosa de cada módulo)
         if (seccion === 'administrar-habitaciones') {
+            configurarCRUDHabitaciones();
             cargarHabitacionesAdmin();
         } else if (seccion === 'administrar-servicios') {
+            if (document.getElementById('form-servicio-admin')) inicializarFormularioServiciosAdmin();
             cargarServiciosAdmin();
         } else if (seccion === 'administrar-reservas') {
+            configurarCRUDReservas();
             cargarReservasAdmin();
         } else if (seccion === 'administrar-paquetes') {
+            configurarCRUDPaquetes();
             cargarPaquetesAdmin();
         } else if (seccion === 'dashboard') {
             cargarDashboard();
@@ -2005,8 +2080,7 @@ async function eliminarServicioAdmin(id) {
         return;
     }
 
-    const confirmacion = confirm(`¿Estás seguro de que deseas eliminar el servicio "${servicio.NombreServicio}"?`);
-    if (!confirmacion) return;
+    if (!await confirmarAccion(`¿Eliminar el servicio "${servicio.NombreServicio}"? Esta acción no se puede deshacer.`, 'Eliminar servicio')) return;
 
     try {
         const resultado = await eliminarServicio(id);
@@ -2179,30 +2253,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Inicializar CRUD de habitaciones y servicios
-    if (document.getElementById('form-habitacion-admin')) {
-        configurarCRUDHabitaciones();
-    }
-
-    if (document.getElementById('form-servicio-admin')) {
-        inicializarFormularioServiciosAdmin();
-    }
-
-    if (document.getElementById('habitaciones-admin-tbody')) {
-        configurarCRUDHabitaciones();
-    }
-
-    // Inicializar CRUD de reservas y paquetes
-    if (document.getElementById('reservas-admin-tbody')) {
-        configurarCRUDReservas();
-    }
-
-    if (document.getElementById('paquetes-admin-tbody')) {
-        configurarCRUDPaquetes();
-    }
-
-    // Cargar dashboard por defecto
-    if (document.getElementById('seccion-dashboard')) {
+    // Si volvemos desde reserva-form.html, abrir el módulo de reservas
+    const volverA = sessionStorage.getItem('volver_a_seccion');
+    if (volverA) {
+        sessionStorage.removeItem('volver_a_seccion');
+        cargarSeccion(volverA);
+    } else if (document.getElementById('seccion-dashboard')) {
         cargarDashboard();
     }
 });
@@ -2328,9 +2384,9 @@ function actualizarBotonSesion(nombreUsuario) {
 let reservasCargadas = [];
 
 const ESTADOS_RESERVA = {
-    1: { label: 'Activa',      clase: 'badge-activa' },
-    2: { label: 'Completada',  clase: 'badge-completada' },
-    3: { label: 'Cancelada',   clase: 'badge-cancelada' }
+    1: { label: 'Activo',     clase: 'badge-activa' },
+    2: { label: 'Pendiente',  clase: 'badge-pendiente' },
+    3: { label: 'Cancelado',  clase: 'badge-cancelada' }
 };
 
 const METODOS_PAGO_LABEL = {
@@ -2399,7 +2455,7 @@ function renderTablaReservasAdmin(lista) {
         const esActiva = estado === 1;
         const esCompletada = estado === 2;
         const switchId = `switch-reserva-${r.IDReserva}`;
-        const switchLabel = esActiva ? 'Activa' : esCompletada ? 'Completada' : 'Cancelada';
+        const switchLabel = esActiva ? 'Activo' : esCompletada ? 'Pendiente' : 'Cancelado';
 
         return `
         <tr>
@@ -2437,15 +2493,10 @@ function renderTablaReservasAdmin(lista) {
                 </div>
             </td>
             <td>
-                <div class="acciones-tabla">
-                    <button type="button" class="btn-accion-fila btn-ver"
-                        data-accion-reserva="ver" data-id="${escaparHtml(String(r.IDReserva))}">
-                        Ver
-                    </button>
-                    <button type="button" class="btn-accion-fila btn-editar"
-                        data-accion-reserva="editar" data-id="${escaparHtml(String(r.IDReserva))}">
-                        Editar
-                    </button>
+                <div class="crud-servicios-acciones">
+                    ${obtenerBotonIcono('ver', 'btn-mini-ver', 'Ver detalle', `Ver reserva #${r.IDReserva}`, 'accion-reserva', String(r.IDReserva))}
+                    ${obtenerBotonIcono('editar', 'btn-mini-editar', 'Editar', `Editar reserva #${r.IDReserva}`, 'accion-reserva', String(r.IDReserva))}
+                    ${obtenerBotonIcono('eliminar', 'btn-mini-eliminar', 'Eliminar', `Eliminar reserva #${r.IDReserva}`, 'accion-reserva', String(r.IDReserva))}
                 </div>
             </td>
         </tr>`;
@@ -2460,47 +2511,12 @@ function renderTablaReservasAdmin(lista) {
 }
 
 function abrirModalReservaAdmin(reserva = null) {
-    const modal = document.getElementById('modal-reserva-admin');
-    const titulo = document.getElementById('reserva-admin-form-title');
-    if (!modal) return;
-
-    limpiarFormularioReservaAdmin();
-
     if (reserva) {
-        if (titulo) titulo.textContent = 'Editar reserva';
-        document.getElementById('reserva-admin-id').value = reserva.IDReserva || '';
-        const clienteBuscar = document.getElementById('reserva-admin-cliente-buscar');
-        const clienteId = document.getElementById('reserva-admin-cliente-id');
-        if (clienteBuscar && reserva.NroDocumento) {
-            const nombre = `${reserva.Nombre || ''} ${reserva.Apellido || ''}`.trim();
-            clienteBuscar.value = nombre ? `${nombre} — ${reserva.NroDocumento}` : reserva.NroDocumento;
-            clienteBuscar.dataset.documentoSeleccionado = reserva.NroDocumento;
-        }
-        if (clienteId) clienteId.value = reserva.NroDocumento || '';
-        document.getElementById('reserva-admin-habitacion').value = reserva.IDHabitacion || '';
-        document.getElementById('reserva-admin-fecha-inicio').value = reserva.FechaInicio ? reserva.FechaInicio.split('T')[0] : '';
-        document.getElementById('reserva-admin-fecha-fin').value = reserva.FechaFinalizacion ? reserva.FechaFinalizacion.split('T')[0] : '';
-        document.getElementById('reserva-admin-subtotal').value = reserva.SubTotal || 0;
-        document.getElementById('reserva-admin-descuento').value = reserva.Descuento || 0;
-        document.getElementById('reserva-admin-iva').value = reserva.IVA || 0;
-        document.getElementById('reserva-admin-total').value = reserva.MontoTotal || 0;
-        document.getElementById('reserva-admin-metodo-pago').value = reserva.MetodoPago || 1;
-        document.getElementById('reserva-admin-estado').value = reserva.IdEstadoReserva || 1;
-
+        sessionStorage.setItem('reserva_form_data', JSON.stringify(reserva));
     } else {
-        if (titulo) titulo.textContent = 'Nueva reserva';
+        sessionStorage.removeItem('reserva_form_data');
     }
-
-    const paquetesIds = reserva?.PaquetesIds
-        ? String(reserva.PaquetesIds).split(',').map(s => s.trim())
-        : [];
-    const serviciosIds = reserva?.ServiciosIds
-        ? String(reserva.ServiciosIds).split(',').map(s => s.trim())
-        : [];
-
-    modal.classList.remove('hidden');
-    document.body.classList.add('modal-open');
-    cargarSelectsReserva(paquetesIds, serviciosIds);
+    window.location.href = 'reserva-form.html';
 }
 
 async function cargarSelectsReserva(paquetesSeleccionados = [], serviciosSeleccionados = []) {
@@ -2562,7 +2578,33 @@ async function cargarSelectsReserva(paquetesSeleccionados = [], serviciosSelecci
         }
     }
 
-    // Servicios — solo activos — botones con descripción y data-costo
+    // Servicios — solo activos — tarjetas expandibles con detalle
+    const SERVICIO_META = {
+        spa:             { icon: 'fa-spa',             dias: 'Lun – Dom', horario: '8:00am – 9:00pm',  ubicacion: 'Piso 2 · Ala Bienestar',       incluye: 'Jacuzzi · Sauna · Sala de vapor · Aromaterapia' },
+        masajes:         { icon: 'fa-hand-sparkles',   dias: 'Lun – Dom', horario: '9:00am – 8:00pm',  ubicacion: 'Piso 2 · Ala Bienestar',       incluye: 'Relajante · Deportivo · Piedras calientes · Aceites' },
+        masaje:          { icon: 'fa-hand-sparkles',   dias: 'Lun – Dom', horario: '9:00am – 8:00pm',  ubicacion: 'Piso 2 · Ala Bienestar',       incluye: 'Relajante · Deportivo · Piedras calientes · Aceites' },
+        sala:            { icon: 'fa-hand-sparkles',   dias: 'Lun – Dom', horario: '9:00am – 8:00pm',  ubicacion: 'Piso 2 · Ala Bienestar',       incluye: 'Relajante · Deportivo · Piedras calientes · Aceites' },
+        desayuno:        { icon: 'fa-mug-hot',          dias: 'Lun – Dom', horario: '7:00am – 10:30am', ubicacion: 'Restaurante principal',         incluye: 'Buffet caliente · Jugos naturales · Frutas de temporada' },
+        cena:            { icon: 'fa-wine-glass',       dias: 'Mié – Dom', horario: '7:00pm – 11:00pm', ubicacion: 'Restaurante gourmet · Piso 1',  incluye: 'Menú 3 tiempos · Vino de la casa · Mesa con vista' },
+        gourmet:         { icon: 'fa-wine-glass',       dias: 'Mié – Dom', horario: '7:00pm – 11:00pm', ubicacion: 'Restaurante gourmet · Piso 1',  incluye: 'Menú 3 tiempos · Vino de la casa · Mesa con vista' },
+        piscina:         { icon: 'fa-person-swimming',  dias: 'Mar – Dom', horario: '6:00am – 10:00pm', ubicacion: 'Área exterior · Piso 1',        incluye: 'Acceso ilimitado · Toallas · Tumbonas' },
+        gimnasio:        { icon: 'fa-dumbbell',         dias: 'Lun – Dom', horario: '5:30am – 11:00pm', ubicacion: 'Piso 3',                        incluye: 'Equipos modernos · Instructor disponible · Duchas' },
+        restaurante:     { icon: 'fa-utensils',         dias: 'Lun – Dom', horario: '12:00pm – 10:00pm',ubicacion: 'Planta baja',                   incluye: 'Carta variada · Menú del día · Bar abierto' },
+        wifi:            { icon: 'fa-wifi',             dias: 'Lun – Dom', horario: '24 horas',          ubicacion: 'Todo el establecimiento',       incluye: 'Fibra óptica · Hasta 300 Mbps · Sin límite' },
+        estacionamiento: { icon: 'fa-car',              dias: 'Lun – Dom', horario: '24 horas',          ubicacion: 'Sótano y área exterior',        incluye: 'Vigilancia · Espacio cubierto y descubierto' },
+        lavanderia:      { icon: 'fa-shirt',            dias: 'Lun – Sáb', horario: '8:00am – 6:00pm',  ubicacion: 'Piso 1 · Sala de servicio',     incluye: 'Lavado · Secado · Planchado · Entrega en 24h' },
+        tours:           { icon: 'fa-map-location-dot', dias: 'Mar – Dom', horario: '8:00am – 5:00pm',  ubicacion: 'Recepción principal',           incluye: 'Guía bilingüe · Transporte · Seguro incluido' },
+        default:         { icon: 'fa-concierge-bell',   dias: 'Lun – Dom', horario: '8:00am – 8:00pm',  ubicacion: 'Recepción principal',           incluye: 'Consulte disponibilidad en recepción' }
+    };
+
+    function obtenerMetaSvc(nombre) {
+        const n = (nombre || '').toLowerCase();
+        for (const [clave, meta] of Object.entries(SERVICIO_META)) {
+            if (clave !== 'default' && n.includes(clave)) return meta;
+        }
+        return SERVICIO_META.default;
+    }
+
     const gridServicios = document.getElementById('reserva-admin-servicios-grid');
     if (gridServicios) {
         const activos = servicios.filter(s => Number(s.Estado) === 1);
@@ -2573,22 +2615,37 @@ async function cargarSelectsReserva(paquetesSeleccionados = [], serviciosSelecci
                 const seleccionado = serviciosSeleccionados.includes(String(s.IDServicio));
                 const costo = Number(s.Costo || 0);
                 const precioTexto = costo > 0 ? `$${costo.toLocaleString('es-CO')}` : 'Incluido';
+                const meta = obtenerMetaSvc(s.NombreServicio);
                 return `
-                <button type="button"
-                    class="servicio-toggle-btn ${seleccionado ? 'seleccionado' : ''}"
-                    data-id="${s.IDServicio}" data-costo="${costo}" aria-pressed="${seleccionado}">
-                    <span class="servicio-btn-nombre">${escaparHtml(s.NombreServicio || '')}</span>
-                    <span class="servicio-btn-desc">${escaparHtml(s.Descripcion || '')}</span>
-                    <span class="servicio-btn-precio">${precioTexto}</span>
-                </button>`;
+                <div class="servicio-toggle-btn ${seleccionado ? 'seleccionado' : ''}"
+                     role="button" tabindex="0"
+                     data-id="${s.IDServicio}" data-costo="${costo}" aria-pressed="${seleccionado}">
+                    <div class="svc-main">
+                        <span class="svc-icon"><i class="fa-solid ${meta.icon}"></i></span>
+                        <div class="svc-info">
+                            <span class="svc-nombre">${escaparHtml(s.NombreServicio || '')}</span>
+                            <span class="svc-desc">${escaparHtml(s.Descripcion || '')}</span>
+                        </div>
+                        <span class="svc-precio">${precioTexto}</span>
+                    </div>
+                    <div class="svc-detalle">
+                        <div class="svc-det-item"><i class="fa-solid fa-calendar-days"></i><span>${meta.dias}</span></div>
+                        <div class="svc-det-item"><i class="fa-solid fa-clock"></i><span>${meta.horario}</span></div>
+                        <div class="svc-det-item"><i class="fa-solid fa-location-dot"></i><span>${meta.ubicacion}</span></div>
+                        <div class="svc-det-item svc-det-incluye"><i class="fa-solid fa-circle-check"></i><span>${meta.incluye}</span></div>
+                    </div>
+                    <div class="svc-check-badge"><i class="fa-solid fa-check-circle"></i> Seleccionado</div>
+                </div>`;
             }).join('');
 
             gridServicios.querySelectorAll('.servicio-toggle-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
+                const toggle = () => {
                     btn.classList.toggle('seleccionado');
                     btn.setAttribute('aria-pressed', btn.classList.contains('seleccionado'));
                     recalcularPrecio();
-                });
+                };
+                btn.addEventListener('click', toggle);
+                btn.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggle(); } });
             });
         }
     }
@@ -2735,8 +2792,14 @@ async function guardarReservaAdmin(e) {
             if (mensajeEl) { mensajeEl.textContent = 'Reserva creada correctamente.'; mensajeEl.className = 'crud-reservas-mensaje exito'; }
             if (typeof showSuccess === 'function') showSuccess('Reserva creada correctamente.', 'Reserva creada');
         }
-        await cargarReservasAdmin();
-        setTimeout(cerrarModalReservaAdmin, 900);
+        // Si venimos de reserva-form.html, regresar al módulo de reservas
+        if (window.location.pathname.includes('reserva-form')) {
+            sessionStorage.setItem('volver_a_seccion', 'administrar-reservas');
+            setTimeout(() => { window.location.href = 'index.html'; }, 900);
+        } else {
+            await cargarReservasAdmin();
+            setTimeout(cerrarModalReservaAdmin, 900);
+        }
     } catch (err) {
         if (mensajeEl) { mensajeEl.textContent = err.message || 'Error al guardar la reserva.'; mensajeEl.className = 'crud-reservas-mensaje error'; }
         if (typeof showError === 'function') showError(err.message || 'No se pudo guardar la reserva.', 'Error');
@@ -2746,7 +2809,7 @@ async function guardarReservaAdmin(e) {
 }
 
 async function cancelarReservaAdmin(id) {
-    if (!confirm('¿Cancelar esta reserva? Esta acción no se puede deshacer.')) return;
+    if (!await confirmarAccion('¿Cancelar esta reserva? Esta acción no se puede deshacer.', 'Cancelar reserva')) return;
     try {
         await cancelarReserva(id);
         if (typeof showSuccess === 'function') showSuccess('Reserva cancelada', 'Operación exitosa');
@@ -2787,7 +2850,7 @@ async function toggleEstadoReservaAdmin(id, activar, inputToggle) {
         }
     } else {
         // Cancelar reserva activa con confirmación
-        if (!confirm('¿Cancelar esta reserva?')) {
+        if (!await confirmarAccion('¿Cancelar esta reserva?', 'Cambiar estado')) {
             inputToggle.checked = true;
             return;
         }
@@ -2869,6 +2932,17 @@ function configurarBuscadorCliente() {
     input.dataset.inicializado = 'true';
 }
 
+async function eliminarReservaAdmin(id) {
+    if (!await confirmarAccion(`¿Eliminar la reserva #${id}? Esta acción no se puede deshacer.`, 'Eliminar reserva')) return;
+    try {
+        await requestJsonAuth(`/reservas/${id}`, { method: 'DELETE', allowNoContent: true });
+        if (typeof showSuccess === 'function') showSuccess('Reserva eliminada correctamente', 'Eliminado');
+        await cargarReservasAdmin();
+    } catch (err) {
+        if (typeof showError === 'function') showError(err.message || 'Error al eliminar la reserva', 'Error');
+    }
+}
+
 function configurarCRUDReservas() {
     const btnNueva = document.getElementById('btn-nueva-reserva-admin');
     if (btnNueva && !btnNueva.dataset.inicializado) {
@@ -2913,6 +2987,7 @@ function configurarCRUDReservas() {
 
             if (accion === 'ver' && reserva) mostrarDetalleReserva(reserva);
             if (accion === 'editar' && reserva) abrirModalReservaAdmin(reserva);
+            if (accion === 'eliminar') await eliminarReservaAdmin(id);
         });
 
         tabla.addEventListener('change', async (e) => {
@@ -3072,24 +3147,21 @@ function renderTablaPaquetesAdmin(lista) {
             <td>${escaparHtml(cliente)}</td>
             <td><strong>${precio}</strong></td>
             <td>
-                <span class="badge-estado ${activo ? 'badge-activa' : 'badge-cancelada'}">
-                    ${activo ? 'Activo' : 'Inactivo'}
-                </span>
+                <label class="switch-estado" style="margin:0;" title="${activo ? 'Desactivar paquete' : 'Activar paquete'}">
+                    <input type="checkbox"
+                        data-accion-paquete="toggle-estado"
+                        data-id="${escaparHtml(String(p.IDPaquete))}"
+                        data-estado="${p.Estado}"
+                        ${activo ? 'checked' : ''}
+                        aria-label="Estado del paquete">
+                    <span class="switch-slider"></span>
+                </label>
             </td>
             <td>
-                <div class="acciones-tabla">
-                    <button type="button" class="btn-accion-fila ${activo ? 'btn-ver' : 'btn-cancelar'}"
-                        data-accion-paquete="toggle-estado" data-id="${escaparHtml(String(p.IDPaquete))}" data-estado="${p.Estado}">
-                        ${activo ? 'Activar' : 'Desactivar'}
-                    </button>
-                    <button type="button" class="btn-accion-fila btn-editar"
-                        data-accion-paquete="editar" data-id="${escaparHtml(String(p.IDPaquete))}">
-                        Editar
-                    </button>
-                    <button type="button" class="btn-accion-fila btn-eliminar"
-                        data-accion-paquete="eliminar" data-id="${escaparHtml(String(p.IDPaquete))}">
-                        Eliminar
-                    </button>
+                <div class="crud-servicios-acciones">
+                    ${obtenerBotonIcono('ver', 'btn-mini-ver', 'Ver detalle', `Ver ${escaparHtml(p.NombrePaquete || 'paquete')}`, 'accion-paquete', String(p.IDPaquete))}
+                    ${obtenerBotonIcono('editar', 'btn-mini-editar', 'Editar', `Editar ${escaparHtml(p.NombrePaquete || 'paquete')}`, 'accion-paquete', String(p.IDPaquete))}
+                    ${obtenerBotonIcono('eliminar', 'btn-mini-eliminar', 'Eliminar', `Eliminar ${escaparHtml(p.NombrePaquete || 'paquete')}`, 'accion-paquete', String(p.IDPaquete))}
                 </div>
             </td>
         </tr>`;
@@ -3291,7 +3363,7 @@ async function guardarPaqueteAdmin(e) {
 }
 
 async function eliminarPaqueteAdmin(id) {
-    if (!confirm('¿Eliminar este paquete? Esta acción no se puede deshacer.')) return;
+    if (!await confirmarAccion('¿Eliminar este paquete? Esta acción no se puede deshacer.', 'Eliminar paquete')) return;
     try {
         await eliminarPaquete(id);
         if (typeof showSuccess === 'function') showSuccess('Paquete eliminado', 'Operación exitosa');
@@ -3341,9 +3413,13 @@ function configurarCRUDPaquetes() {
             const id = btn.dataset.id;
             const paquete = paquetesCargados.find(p => String(p.IDPaquete) === String(id));
 
-            if (accion === 'editar' && paquete) abrirModalPaqueteAdmin(paquete);
-            if (accion === 'toggle-estado') await toggleEstadoPaqueteAdmin(id, Number(btn.dataset.estado));
+            if ((accion === 'ver' || accion === 'editar') && paquete) abrirModalPaqueteAdmin(paquete);
             if (accion === 'eliminar') await eliminarPaqueteAdmin(id);
+        });
+        tabla.addEventListener('change', async (e) => {
+            const chk = e.target.closest('input[data-accion-paquete="toggle-estado"]');
+            if (!chk) return;
+            await toggleEstadoPaqueteAdmin(chk.dataset.id, Number(chk.dataset.estado));
         });
         tabla.dataset.inicializado = 'true';
     }

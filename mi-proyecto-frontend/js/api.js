@@ -405,7 +405,7 @@ async function obtenerClientes() {
 
 async function obtenerEstadisticasDashboard() {
     try {
-        return await requestJson('/dashboard/estadisticas');
+        return await requestJsonAuth('/dashboard/estadisticas');
     } catch (error) {
         apiLogger.error('Error al obtener estadísticas del dashboard:', error.message);
         return null;

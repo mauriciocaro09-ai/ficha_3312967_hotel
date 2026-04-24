@@ -178,6 +178,26 @@
                         </ul>
                     </div>
                 </div>
+
+                <!-- Gráficas de estadísticas -->
+                <div class="dashboard-charts">
+                    <div class="chart-card">
+                        <h3 class="dashboard-section-title">
+                            <i class="fa-solid fa-chart-pie"></i> Reservas por estado
+                        </h3>
+                        <div class="chart-container">
+                            <canvas id="dash-chart-estados"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <h3 class="dashboard-section-title">
+                            <i class="fa-solid fa-chart-bar"></i> Reservas por mes
+                        </h3>
+                        <div class="chart-container">
+                            <canvas id="dash-chart-meses"></canvas>
+                        </div>
+                    </div>
+                </div>
             </section>
 
             <!-- Sección CRUD de Habitaciones -->
@@ -425,11 +445,11 @@
                         <strong id="reservas-admin-total">0</strong>
                     </article>
                     <article>
-                        <span>Activas</span>
+                        <span>Activos</span>
                         <strong id="reservas-admin-activas">0</strong>
                     </article>
                     <article>
-                        <span>Canceladas</span>
+                        <span>Cancelados</span>
                         <strong id="reservas-admin-canceladas">0</strong>
                     </article>
                 </div>
@@ -445,9 +465,9 @@
                                 <input type="search" id="busqueda-reservas-admin" placeholder="Buscar reserva">
                                 <select id="filtro-estado-reservas-admin" aria-label="Filtrar por estado">
                                     <option value="all">Todos los estados</option>
-                                    <option value="1">Activas</option>
-                                    <option value="2">Completadas</option>
-                                    <option value="3">Canceladas</option>
+                                    <option value="1">Activos</option>
+                                    <option value="2">Pendientes</option>
+                                    <option value="3">Cancelados</option>
                                 </select>
                             </div>
                         </div>
@@ -530,9 +550,9 @@
                             <label>
                                 <span>Estado</span>
                                 <select id="reserva-admin-estado">
-                                    <option value="1">Activa</option>
-                                    <option value="2">Completada</option>
-                                    <option value="3">Cancelada</option>
+                                    <option value="1">Activo</option>
+                                    <option value="2">Pendiente</option>
+                                    <option value="3">Cancelado</option>
                                 </select>
                             </label>
                         </div>
@@ -711,12 +731,7 @@
                             <input type="text" id="paquete-admin-imagen-url" placeholder="http://localhost:3000/img/nombre.jpg">
                         </label>
 
-                        <label>
-                            <span>Cliente asignado (opcional)</span>
-                            <select id="paquete-admin-cliente">
-                                <option value="">-- Sin cliente asignado --</option>
-                            </select>
-                        </label>
+
 
                         <div class="crud-paquetes-form-actions">
                             <button type="submit" class="btn-accion-crud btn-accion-principal" id="btn-paquete-admin-guardar">Guardar paquete</button>
@@ -766,6 +781,9 @@
             <p>Conectado al backend en: http://localhost:3000</p>
         </footer>
     </div>
+
+    <!-- Chart.js para gráficas del dashboard -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
     <!-- Scripts JavaScript -->
     <!-- ⭐ IMPORTANTE: Cargar en este orden -->
@@ -825,36 +843,22 @@
 
         // Función para cargar una sección desde el sidebar
         function cargarSeccion(seccion, event) {
-            if (event) {
-                event.preventDefault();
-            }
-            
-            const secciones = [
-                'seccion-administrar-habitaciones',
-                'seccion-administrar-servicios',
-                'seccion-administrar-reservas',
-                'seccion-administrar-paquetes'
-            ];
+            if (event) event.preventDefault();
 
-            // Ocultar todas las secciones usando la clase helper
-            secciones.forEach((seccionId) => {
-                const elemento = document.getElementById(seccionId);
-                if (elemento) {
-                    elemento.classList.add('hidden');
-                }
-            });
-            
+            // Ocultar TODAS las secciones admin incluido el dashboard
+            document.querySelectorAll('[id^="seccion-"]').forEach(el => el.classList.add('hidden'));
+
             // Mostrar la sección seleccionada
-            const seccionId = 'seccion-' + seccion;
-            const seccionElement = document.getElementById(seccionId);
-            
+            const seccionElement = document.getElementById('seccion-' + seccion);
             if (seccionElement) {
                 seccionElement.classList.remove('hidden');
-                
-                // Cargar los datos según la sección
+
+                // Inicializar y cargar datos del módulo correspondiente
                 if (seccion === 'administrar-habitaciones') {
+                    if (typeof configurarCRUDHabitaciones === 'function') configurarCRUDHabitaciones();
                     if (typeof cargarHabitacionesAdmin === 'function') cargarHabitacionesAdmin();
                 } else if (seccion === 'administrar-servicios') {
+                    if (typeof inicializarFormularioServiciosAdmin === 'function') inicializarFormularioServiciosAdmin();
                     if (typeof cargarServiciosAdmin === 'function') cargarServiciosAdmin();
                 } else if (seccion === 'administrar-reservas') {
                     if (typeof configurarCRUDReservas === 'function') configurarCRUDReservas();
@@ -862,9 +866,11 @@
                 } else if (seccion === 'administrar-paquetes') {
                     if (typeof configurarCRUDPaquetes === 'function') configurarCRUDPaquetes();
                     if (typeof cargarPaquetesAdmin === 'function') cargarPaquetesAdmin();
+                } else if (seccion === 'dashboard') {
+                    if (typeof cargarDashboard === 'function') cargarDashboard();
                 }
             }
-            
+
             // Cerrar el sidebar después de seleccionar
             closeSidebar();
         }
