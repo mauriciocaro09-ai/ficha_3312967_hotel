@@ -12,7 +12,7 @@ router.put("/:id/cancelar", reservasController.cancelar);
 // (Opcional) por si luego usas editar
 router.put("/:id", reservasController.actualizar);
 
-// (Opcional) compatibilidad si quieres borrar con DELETE
-router.delete("/:id", reservasController.cancelar);
+// Eliminar reserva (borra el registro de la BD)
+router.delete("/:id", reservasController.eliminar);
 
 module.exports = router;

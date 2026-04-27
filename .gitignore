@@ -18,3 +18,10 @@ Thumbs.db
 # Editor
 .vscode/
 .idea/
+
+# WhatsApp session data
+BACKEND/.wwebjs_auth/
+BACKEND/.wwebjs_cache/
+
+# Claude settings
+.claude/settings.local.json

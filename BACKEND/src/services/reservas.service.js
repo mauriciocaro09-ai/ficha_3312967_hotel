@@ -1,4 +1,6 @@
 const db = require("../config/db");
+const EmailService = require("./email.service");
+const WhatsappService = require("./whatsapp.service");
 
 const ReservasService = {
   // 🔥 CREAR RESERVA
@@ -90,6 +92,35 @@ const ReservasService = {
         );
       }
     }
+
+    // Enviar notificaciones (no bloquea si fallan)
+    db.query(
+      `SELECT c.Nombre, c.Apellido, c.Email, c.Telefono, h.NombreHabitacion
+       FROM Clientes c
+       JOIN Habitacion h ON h.IDHabitacion = ?
+       WHERE c.IDCliente = ?`,
+      [IDHabitacion, IDCliente]
+    ).then(([rows]) => {
+      const cliente = rows[0];
+      if (!cliente) return;
+
+      const datosNotificacion = {
+        clienteNombre: `${cliente.Nombre} ${cliente.Apellido}`,
+        reservaId: idReserva,
+        habitacion: cliente.NombreHabitacion,
+        fechaInicio: FechaInicio,
+        fechaFin: FechaFinalizacion,
+        montoTotal: MontoTotal ?? 0,
+      };
+
+      if (cliente.Email) {
+        EmailService.enviarConfirmacionReserva({ ...datosNotificacion, clienteEmail: cliente.Email });
+      }
+
+      if (cliente.Telefono) {
+        WhatsappService.enviarConfirmacionReserva({ ...datosNotificacion, clienteTelefono: cliente.Telefono });
+      }
+    }).catch((err) => console.error("Error consultando datos para notificaciones:", err));
 
     return { insertId: idReserva };
   },
@@ -215,6 +246,16 @@ const ReservasService = {
       }
     }
 
+    return result.affectedRows > 0;
+  },
+
+  // 🔥 ELIMINAR
+  eliminar: async (id) => {
+    await db.query(`DELETE FROM detalle_reserva_paquete WHERE IDReserva = ?`, [id]);
+    await db.query(`DELETE FROM detallereservapaquetes WHERE IDReserva = ?`, [id]);
+    await db.query(`DELETE FROM detallereservaservicio WHERE IDReserva = ?`, [id]);
+    await db.query(`DELETE FROM reservapaquetes WHERE IDReserva = ?`, [id]);
+    const [result] = await db.query(`DELETE FROM Reserva WHERE IdReserva = ?`, [id]);
     return result.affectedRows > 0;
   },
 };

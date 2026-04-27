@@ -45,4 +45,16 @@ const actualizar = async (req, res) => {
   }
 };
 
-module.exports = { crear, obtener, cancelar, actualizar };
+const eliminar = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const ok = await ReservasService.eliminar(id);
+    if (!ok) return res.status(404).json({ error: "Reserva no encontrada" });
+    return res.status(200).json({ mensaje: "Reserva eliminada" });
+  } catch (error) {
+    console.error("RESERVAS ERROR:", error);
+    return res.status(500).json({ error: "Error al eliminar", detalle: error.message });
+  }
+};
+
+module.exports = { crear, obtener, cancelar, actualizar, eliminar };
