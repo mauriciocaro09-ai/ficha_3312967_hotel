@@ -2935,7 +2935,7 @@ function configurarBuscadorCliente() {
 async function eliminarReservaAdmin(id) {
     if (!await confirmarAccion(`¿Eliminar la reserva #${id}? Esta acción no se puede deshacer.`, 'Eliminar reserva')) return;
     try {
-        await requestJsonAuth(`/reservas/${id}`, { method: 'DELETE', allowNoContent: true });
+        await requestJson(`/reservas/${id}`, { method: 'DELETE', allowNoContent: true });
         if (typeof showSuccess === 'function') showSuccess('Reserva eliminada correctamente', 'Eliminado');
         await cargarReservasAdmin();
     } catch (err) {

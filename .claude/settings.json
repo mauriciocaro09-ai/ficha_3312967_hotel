@@ -18,7 +18,12 @@
       "Bash(python -c \"import json,sys; data=json.load\\(sys.stdin\\); print\\(json.dumps\\(data[:2], indent=2, ensure_ascii=False\\)\\)\")",
       "Bash(curl -s \"http://localhost:3000/api/servicios\")",
       "Bash(python -c \"import json,sys; data=json.load\\(sys.stdin\\); print\\(json.dumps\\(data[:3], indent=2, ensure_ascii=False\\)\\)\")",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(git remote *)",
+      "Bash(git push *)",
+      "Read(//d/ПРОГРАММИРОВАНИЕ SOFTWARE/ficha_3312967_hotel-main/mi-proyecto-frontend/js/**)",
+      "Bash(node src/scripts/fixDuplicateServicios.js)",
+      "Bash(npm run *)"
     ]
   }
 }
