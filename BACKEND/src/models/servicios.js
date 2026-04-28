@@ -5,13 +5,13 @@ const db = require("../database/connection");
 const ServiciosModel = {
     // Obtener todos los servicios
     findAll: async () => {
-        const [rows] = await db.query("SELECT * FROM servicio");
+        const [rows] = await db.query("SELECT * FROM servicios");
         return rows;
     },
 
     // Obtener servicio por ID
     findById: async (id) => {
-        const [rows] = await db.query("SELECT * FROM servicio WHERE IDServicio = ?", [id]);
+        const [rows] = await db.query("SELECT * FROM servicios WHERE IDServicio = ?", [id]);
         return rows[0];
     },
 
@@ -19,7 +19,7 @@ const ServiciosModel = {
     create: async (servicioData) => {
         const { NombreServicio, Descripcion, Duracion, CantidadMaximaPersonas, Costo, Estado } = servicioData;
         const [result] = await db.query(
-            "INSERT INTO servicio (NombreServicio, Descripcion, Duracion, CantidadMaximaPersonas, Costo, Estado) VALUES (?, ?, ?, ?, ?, ?)",
+            "INSERT INTO servicios (NombreServicio, Descripcion, Duracion, CantidadMaximaPersonas, Costo, Estado) VALUES (?, ?, ?, ?, ?, ?)",
             [NombreServicio, Descripcion, Duracion, CantidadMaximaPersonas, Costo, Estado]
         );
         return result;
@@ -29,7 +29,7 @@ const ServiciosModel = {
     update: async (id, servicioData) => {
         const { NombreServicio, Descripcion, Duracion, CantidadMaximaPersonas, Costo, Estado } = servicioData;
         const [result] = await db.query(
-            "UPDATE servicio SET NombreServicio = ?, Descripcion = ?, Duracion = ?, CantidadMaximaPersonas = ?, Costo = ?, Estado = ? WHERE IDServicio = ?",
+            "UPDATE servicios SET NombreServicio = ?, Descripcion = ?, Duracion = ?, CantidadMaximaPersonas = ?, Costo = ?, Estado = ? WHERE IDServicio = ?",
             [NombreServicio, Descripcion, Duracion, CantidadMaximaPersonas, Costo, Estado, id]
         );
         return result;
@@ -37,7 +37,7 @@ const ServiciosModel = {
 
     // Eliminar servicio
     delete: async (id) => {
-        const [result] = await db.query("DELETE FROM servicio WHERE IDServicio = ?", [id]);
+        const [result] = await db.query("DELETE FROM servicios WHERE IDServicio = ?", [id]);
         return result;
     }
 };

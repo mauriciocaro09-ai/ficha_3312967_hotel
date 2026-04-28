@@ -10,7 +10,6 @@ const backendHost = 'localhost';
 const backendBaseUrl = `http://${backendHost}:${backendPort}`;
 
 const frontendCandidates = [
-  path.resolve(__dirname, '..', 'FRONTEND'),
   path.resolve(__dirname, '..', 'mi_proyecto_frontend'),
   path.resolve(__dirname, '..', 'mi-proyecto-frontend')
 ];
@@ -90,6 +89,7 @@ async function checkDatabase() {
 
   const config = {
     host: process.env.DB_HOST || 'localhost',
+    port: Number(process.env.DB_PORT) || 3306,
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '',
     database: process.env.DB_NAME || 'hospedaje'
@@ -101,7 +101,7 @@ async function checkDatabase() {
     connection = await mysql.createConnection(config);
     printResult(true, `Connected to database '${config.database}'`);
 
-    const requiredTables = ['cliente', 'habitacion', 'reserva', 'servicio'];
+    const requiredTables = ['clientes', 'habitacion', 'reserva', 'servicios'];
     const [rows] = await connection.execute('SHOW TABLES');
 
     const tableNames = new Set(rows.map((row) => Object.values(row)[0]));
@@ -154,7 +154,7 @@ function checkFrontendIntegration() {
 
   const frontendPath = findFrontendPath();
   if (!frontendPath) {
-    printResult(false, 'Frontend folder not found (FRONTEND, mi_proyecto_frontend or mi-proyecto-frontend)');
+    printResult(false, 'Frontend folder not found (mi_proyecto_frontend or mi-proyecto-frontend)');
     return false;
   }
 

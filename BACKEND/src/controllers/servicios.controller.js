@@ -1,73 +1,138 @@
-const db = require("../database/connection");
+const ServiciosService = require("../services/servicios.service");
 
-// Get all services / list
-const list = async (req, res) => {
-    try {
-        const [servicios] = await db.query("SELECT * FROM servicio")
-        res.json(servicios)
-    } catch (error) {
-        res.status(500).json({ error: "Error al obtener los servicios" })
-    }
-}
+const ServiciosController = {
 
-// Get service by ID
-const getById = async (req, res) => {
-    const { id } = req.params;
-    try {
-        const [rows] = await db.query("SELECT * FROM servicio WHERE IDServicio = ?", [id]);
-        if (rows.length === 0) {
-            return res.status(404).json({ error: "Servicio no encontrado" });
+    listar: async (req, res) => {
+
+        try {
+
+            const data = await ServiciosService.listar();
+
+            res.json(data);
+
+        } catch (error) {
+
+            console.error(error);
+
+            res.status(500).json({
+                error: "Error obteniendo servicios"
+            });
+
         }
-        res.json(rows[0]);
+
+    },
+
+    obtener: async (req, res) => {
+
+        try {
+
+            const data = await ServiciosService.obtener(req.params.id);
+
+            res.json(data);
+
+        } catch (error) {
+
+            res.status(500).json({
+                error: "Error obteniendo servicio"
+            });
+
+        }
+
+    },
+
+crear: async (req, res) => {
+
+    try {
+
+        console.log("BODY:", req.body);
+
+        const data = await ServiciosService.crear(req.body);
+
+        res.status(201).json({
+            mensaje: "Servicio creado correctamente",
+            data
+        });
+
     } catch (error) {
-        res.status(500).json({ error: "Error al obtener el servicio" });
+
+        console.error(error);
+
+        res.status(500).json({
+            error: "Error creando servicio",
+            detalle: error.message
+        });
+
     }
+
+},
+
+    actualizar: async (req, res) => {
+
+        try {
+
+            const data = await ServiciosService.actualizar(
+                req.params.id,
+                req.body
+            );
+
+            res.json({
+                mensaje: "Servicio actualizado",
+                data
+            });
+
+        } catch (error) {
+
+            res.status(500).json({
+                error: "Error actualizando servicio"
+            });
+
+        }
+
+    },
+
+    eliminar: async (req, res) => {
+
+        try {
+
+            const data = await ServiciosService.eliminar(req.params.id);
+
+            res.json({
+                mensaje: "Servicio eliminado",
+                data
+            });
+
+        } catch (error) {
+
+            res.status(500).json({
+                error: "Error eliminando servicio"
+            });
+
+        }
+
+    },
+
+    toggleEstado: async (req, res) => {
+
+        try {
+
+            const { Estado } = req.body;
+
+            if (Estado === undefined || Estado === null) {
+                return res.status(400).json({ error: "Campo Estado es requerido" });
+            }
+
+            await ServiciosService.toggleEstado(req.params.id, Estado);
+
+            res.json({ mensaje: "Estado del servicio actualizado", Estado });
+
+        } catch (error) {
+
+            res.status(500).json({ error: "Error actualizando estado del servicio" });
+
+        }
+
+    }
+
 };
 
-// CREATE servicio POST
-const create = async (req, res) => { 
-    const { NombreServicio, Descripcion, Duracion, CantidadMaximaPersonas, Costo, Estado } = req.body;
-    try {
-        await db.query(
-            "INSERT INTO servicio (NombreServicio, Descripcion, Duracion, CantidadMaximaPersonas, Costo, Estado) VALUES (?, ?, ?, ?, ?, ?)",
-            [NombreServicio, Descripcion, Duracion, CantidadMaximaPersonas, Costo, Estado]
-        )
-        res.status(201).json({ message: "Servicio creado exitosamente"});
-    } catch (error) {
-        res.status(500).json({ error: "Error al crear el servicio" });
-    }
-}
-
-// UPDATE servicio PUT
-const update = async (req, res) => {
-    const { id } = req.params;
-    const { NombreServicio, Descripcion, Duracion, CantidadMaximaPersonas, Costo, Estado } = req.body; 
-    try {
-        await db.query(
-            "UPDATE servicio SET NombreServicio = ?, Descripcion = ?, Duracion = ?, CantidadMaximaPersonas = ?, Costo = ?, Estado = ? WHERE IDServicio = ?",
-            [NombreServicio, Descripcion, Duracion, CantidadMaximaPersonas, Costo, Estado, id]
-        )
-        res.json({ message: "Servicio actualizado exitosamente" })
-    } catch (error) {
-        res.status(500).json({ error: "Error al actualizar el servicio" })
-    }
-}   
-
-// DELETE servicio
-const remove = async (req, res) => {
-    const { id } = req.params;
-    try {
-        await db.query("DELETE FROM servicio WHERE IDServicio = ?", [id])
-        res.json({ message: "Servicio eliminado exitosamente" })
-    } catch (error) {
-        res.status(500).json({ error: "Error al eliminar el servicio" })
-    }
-}
-
-module.exports = {
-    list,
-    getById,
-    create,
-    update,
-    remove
-}
+module.exports = ServiciosController;

@@ -1,12 +1,23 @@
 const express = require("express");
 const router = express.Router();
-const clienteController = require("../controllers/clientes.controller");
+const clientesController = require("../controllers/clientes.controller");
 
-// Rutas para clientes
-router.get("/", clienteController.list);
-router.get("/:id", clienteController.getById);
-router.post("/", clienteController.create);
-router.put("/:id", clienteController.update);
-router.delete("/:id", clienteController.remove);
+// 1. OBTENER CLIENTES (GET)
+router.get("/", clientesController.getAll);
+
+// 2. BUSCAR CLIENTE POR DOCUMENTO (GET)
+router.get("/buscar", clientesController.buscarPorDocumento);
+
+// 3. OBTENER CLIENTE POR ID (GET)
+router.get("/:id", clientesController.obtenerPorId);
+
+// 4. CREAR UN NUEVO CLIENTE (POST)
+router.post("/", clientesController.create);
+
+// 5. ELIMINAR CLIENTE (DELETE)
+router.delete("/:id", clientesController.remove);
+
+// 6. ACTUALIZAR CLIENTE (PUT)
+router.put("/:id", clientesController.update);
 
 module.exports = router;

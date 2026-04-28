@@ -1,95 +1,94 @@
-const db = require("../database/connection");
+const db = require("../config/db");
 
-// Get all rooms / list
-const list = async (req, res) => {
-    try {
-        const [habitaciones] = await db.query("SELECT * FROM habitacion")
-        res.json(habitaciones)
-    } catch (error) {
-        res.status(500).json({ error: "Error al obtener las habitaciones" })
-    }
-}
+/* ================= LISTAR TODAS ================= */
 
-// Get room by ID
-const getById = async (req, res) => {
-    const { id } = req.params;
-    try {
-        const [rows] = await db.query("SELECT * FROM habitacion WHERE IDHabitacion = ?", [id]);
-        if (rows.length === 0) {
-            return res.status(404).json({ error: "Habitación no encontrada" });
-        }
-        res.json(rows[0]);
-    } catch (error) {
-        res.status(500).json({ error: "Error al obtener la habitación" });
-    }
+const getAll = async (req, res) => {
+  try {
+    const [rows] = await db.query("SELECT * FROM habitacion");
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ error: "Error obteniendo habitaciones", detalle: error.message });
+  }
 };
 
-// CREATE habitacion POST
-const create = async (req, res) => { 
-    const {  NombreHabitacion, ImagenHabitacion, Descripcion, Costo, Estado } = req.body;
-    
-    // Validar campos requeridos
-    if (!NombreHabitacion || !Costo) {
-        return res.status(400).json({ error: "Nombre y costo son requeridos" });
-    }
-    
-    try {
-        await db.query(
-            "INSERT INTO habitacion (NombreHabitacion, ImagenHabitacion, Descripcion, Costo, Estado) VALUES (?, ?, ?, ?, ?)",
-            [NombreHabitacion, ImagenHabitacion, Descripcion, Costo, Estado]
-        )
-        res.status(201).json({ message: "Habitación creada exitosamente"});
-    } catch (error) {
-        res.status(500).json({ error: "Error al crear la habitación" });
-    }
-}
+/* ================= DISPONIBLES ================= */
 
-// UPDATE habitacion PUT
+const disponibles = async (req, res) => {
+  try {
+    const [rows] = await db.query("SELECT * FROM habitacion WHERE Estado = 1");
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ error: "Error obteniendo habitaciones disponibles", detalle: error.message });
+  }
+};
+
+/* ================= BUSCAR ================= */
+
+const buscar = async (req, res) => {
+  try {
+    const q = (req.query.q || req.query.query || "").toString().trim();
+
+    if (!q) {
+      return res.status(400).json({ error: "Parámetro de búsqueda 'q' requerido" });
+    }
+
+    const like = `%${q}%`;
+    const [rows] = await db.query(
+      "SELECT * FROM habitacion WHERE NombreHabitacion LIKE ? OR Descripcion LIKE ?",
+      [like, like]
+    );
+
+    return res.json(rows);
+  } catch (error) {
+    return res.status(500).json({ error: "Error buscando habitaciones", detalle: error.message });
+  }
+};
+
+/* ================= CREAR ================= */
+
+const create = async (req, res) => {
+  try {
+    const { nombre, descripcion, precio } = req.body;
+
+    await db.query(
+      `INSERT INTO habitacion (NombreHabitacion, Descripcion, Costo, Estado) VALUES (?, ?, ?, ?)`,
+      [nombre, descripcion, precio, 1]
+    );
+
+    res.status(201).json({ mensaje: "Habitación creada correctamente" });
+  } catch (error) {
+    res.status(500).json({ error: "Error creando habitación", detalle: error.message });
+  }
+};
+
+/* ================= ACTUALIZAR ================= */
+
 const update = async (req, res) => {
+  try {
     const { id } = req.params;
-    const { NombreHabitacion, ImagenHabitacion, Descripcion, Costo, Estado } = req.body; 
-    
-    // Validar campos requeridos
-    if (!NombreHabitacion || !Costo) {
-        return res.status(400).json({ error: "Nombre y costo son requeridos" });
-    }
-    
-    try {
-        const [existing] = await db.query("SELECT * FROM habitacion WHERE IDHabitacion = ?", [id]);
-        if (existing.length === 0) {
-            return res.status(404).json({ error: "Habitación no encontrada" });
-        }
+    const { nombre, descripcion, precio, estado } = req.body;
 
-        await db.query(
-            "UPDATE habitacion SET NombreHabitacion = ?, ImagenHabitacion = ?, Descripcion = ?, Costo = ?, Estado = ? WHERE IDHabitacion = ?",
-            [NombreHabitacion, ImagenHabitacion, Descripcion, Costo, Estado, id]
-        );
-        res.json({ message: "Habitación actualizada exitosamente" })
-    } catch (error) {
-        res.status(500).json({ error: "Error al actualizar la habitación" })
-    }
-}   
+    await db.query(
+      `UPDATE habitacion SET NombreHabitacion = ?, Descripcion = ?, Costo = ?, Estado = ? WHERE IDHabitacion = ?`,
+      [nombre, descripcion, precio, estado, id]
+    );
 
-// DELETE habitacion
+    res.json({ mensaje: "Habitación actualizada con éxito" });
+  } catch (error) {
+    res.status(500).json({ error: "Error actualizando habitación", detalle: error.message });
+  }
+};
+
+/* ================= ELIMINAR ================= */
+
 const remove = async (req, res) => {
+  try {
     const { id } = req.params;
-    try {
-        const [existing] = await db.query("SELECT * FROM habitacion WHERE IDHabitacion = ?", [id]);
-        if (existing.length === 0) {
-            return res.status(404).json({ error: "Habitación no encontrada" });
-        }
+    await db.query("DELETE FROM habitacion WHERE IDHabitacion = ?", [id]);
+    res.json({ mensaje: "Habitación eliminada" });
+  } catch (error) {
+    res.status(500).json({ error: "Error eliminando habitación", detalle: error.message });
+  }
+};
 
-        await db.query("DELETE FROM habitacion WHERE IDHabitacion = ?", [id])
-        res.json({ message: "Habitación eliminada exitosamente" })
-    } catch (error) {
-        res.status(500).json({ error: "Error al eliminar la habitación" })
-    }
-}
-
-module.exports = {
-    list,
-    getById,
-    create,
-    update,
-    remove
-}
+module.exports = { getAll, disponibles, buscar, create, update, remove };

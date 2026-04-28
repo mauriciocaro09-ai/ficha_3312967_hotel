@@ -3,6 +3,8 @@
  * API REST con Express
  */
 
+require('dotenv').config();
+
 const app = require('./src/app');
 const db = require('./src/database/connection');
 const port = process.env.PORT || 3000;
@@ -47,7 +49,8 @@ const startServer = async () => {
             process.exit(1);
         });
     } catch (error) {
-        console.error('No se pudo iniciar el backend:', error.message);
+        const detail = error && (error.message || error.code) ? (error.message || error.code) : String(error);
+        console.error('No se pudo iniciar el backend:', detail);
         process.exit(1);
     }
 };
