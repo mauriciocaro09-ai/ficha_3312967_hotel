@@ -1,0 +1,79 @@
+<!-- ============================================
+     SIDEBAR - Menú Lateral
+============================================ -->
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Abrir menú">
+    <span class="hamburger"></span>
+</button>
+
+<aside id="sidebar" class="sidebar">
+    <div class="sidebar-header">
+        <h2>📊 MENU</h2>
+        <button id="sidebar-close" class="sidebar-close" aria-label="Cerrar menú">&times;</button>
+    </div>
+    
+    <nav class="sidebar-nav">
+        <ul>
+            <li class="sidebar-item" data-module="dashboard">
+                <a href="#"> <!-- Sin sección específica, podría cargar un módulo de dashboard o redirigir a una página de inicio -->
+                    <span class="icon"><i class="fa-solid fa-chart-line" aria-hidden="true"></i></span>
+                    <span class="text">Dashboard</span>
+                </a>
+            </li>
+            <li class="sidebar-item" data-module="habitaciones">
+                <a href="#" onclick="cargarSeccion('administrar-habitaciones', event)">
+                    <span class="icon"><i class="fa-solid fa-bed" aria-hidden="true"></i></span>
+                    <span class="text">Administrar habitaciones</span>
+                </a>
+            </li>
+            <li class="sidebar-item" data-module="servicios">
+                <a href="#" onclick="cargarSeccion('administrar-servicios', event)">
+                    <span class="icon"><i class="fa-solid" aria-hidden="true">&#xf7b6;</i></span>
+                    <span class="text">Administrar servicios</span>
+                </a>
+            </li>
+            <li class="sidebar-item" data-module="usuarios">
+                <a href="#" onclick="cargarSeccion('usuarios', event)">
+                    <span class="icon"><i class="fa-solid fa-users" aria-hidden="true"></i></span>
+                    <span class="text">Gestión de Usuarios</span>
+                </a>
+            </li>
+            <li class="sidebar-item" data-module="roles">
+                <a href="#" onclick="cargarSeccion('roles', event)">
+                    <span class="icon"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i></span>
+                    <span class="text">Gestión de Roles</span>
+                </a>
+            </li>
+            <li class="sidebar-item" data-module="reservas">
+                <a href="#"> <!-- Sin sección específica, podría cargar un módulo de reservas o redirigir a una página de reservas -->
+                    <span class="icon"><i class="fa-solid fa-calendar-check" aria-hidden="true"></i></span>
+                    <span class="text">Reservas</span>
+                </a>
+            </li>
+            <li class="sidebar-item" data-module="perfil">
+                <a href="#" onclick="cargarSeccion('perfil', event)">
+                    <span class="icon"><i class="fa-solid fa-circle-user" aria-hidden="true"></i></span>
+                    <span class="text">Mi Perfil</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+    
+    <div class="sidebar-footer">
+        <div class="user-section">
+            <p class="user-welcome">Bienvenido</p>
+            <p class="user-email" id="sidebar-user-email">-</p>
+            <p class="user-role" id="sidebar-user-role">-</p>
+            <div class="user-buttons">
+                <button id="sidebar-btn-perfil" class="btn-perfil" onclick="cargarSeccion('perfil', event)">
+                    <i class="fa-solid fa-user"></i> Perfil
+                </button>
+                <button id="sidebar-btn-logout" class="btn-logout" onclick="cerrarSesion()">
+                    <i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión
+                </button>
+            </div>
+        </div>
+    </div>
+</aside>
+
+<!-- Overlay oscuro cuando el sidebar está abierto -->
+<div id="sidebar-overlay" class="sidebar-overlay"></div>

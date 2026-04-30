@@ -1,7 +1,7 @@
 // Cargar variables de entorno desde .env
 require('dotenv').config();
 
-const mysql = require('mysql2'); // importamos el modulo mysql2
+const mysql = require('mysql2/promise'); // usar mysql2/promise para promesas
 
 // Obtenemos las variables de entorno con valores por defecto para desarrollo
 const dbConfig = {
@@ -9,11 +9,14 @@ const dbConfig = {
     port: Number(process.env.DB_PORT) || 3306,
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'hospedaje'
+    database: process.env.DB_NAME || 'hospedaje',
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
 };
 
-// creamos la conexion a la base de datos
-const connection = mysql.createConnection(dbConfig);
+// Crear un pool de conexiones
+const pool = mysql.createPool(dbConfig);
 
-// exportamos la conexion a la base de datos
-module.exports = connection.promise(); 
+// exportar el pool para que pueda ser usado en toda la aplicación
+module.exports = pool; 

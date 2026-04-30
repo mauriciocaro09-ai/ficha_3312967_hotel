@@ -1,34 +1,28 @@
 const jwt = require("jsonwebtoken");
 
-const verificarToken = (req, res, next) => {
+const verifyToken = (req, res, next) => {
+  const token = req.headers["authorization"];
 
-    const token = req.headers["authorization"];
+  if (!token) {
+    return res.status(403).json({ message: "No se proporcionó un token." });
+  }
 
-    if (!token) {
-        return res.status(403).json({
-            error: "Token requerido"
-        });
+  try {
+    const pureToken = token.replace("Bearer ", "").split(" ").pop();
+
+    if (!process.env.JWT_SECRET) {
+      throw new Error("JWT_SECRET no está definido");
     }
 
-    try {
+    const decoded = jwt.verify(pureToken, process.env.JWT_SECRET);
 
-        const decoded = jwt.verify(
-            token.replace("Bearer ", ""),
-            process.env.JWT_SECRET
-        );
-
-        req.usuario = decoded;
-
-        next();
-
-    } catch (error) {
-
-        res.status(401).json({
-            error: "Token inválido"
-        });
-
-    }
-
+    req.user = decoded;
+    req.usuario = decoded;
+    next();
+  } catch (error) {
+    return res.status(401).json({ message: "Token inválido o expirado." });
+  }
 };
 
-module.exports = verificarToken;
+module.exports = verifyToken;
+module.exports.verifyToken = verifyToken;

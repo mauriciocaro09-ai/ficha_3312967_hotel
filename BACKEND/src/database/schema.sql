@@ -9,7 +9,8 @@ CREATE TABLE IF NOT EXISTS roles (
     IDRol INT AUTO_INCREMENT PRIMARY KEY,
     Nombre VARCHAR(255),
     Estado VARCHAR(50),
-    IsActive TINYINT(1) DEFAULT 1
+    IsActive TINYINT(1) DEFAULT 1,
+    Permisos JSON
 );
 
 -- Crear tabla de clientes

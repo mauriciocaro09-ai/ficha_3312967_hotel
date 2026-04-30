@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Hospedaje Digital - Encuentra la habitación perfecta para tu estadía">
+    <title>Hospedaje Digital - Inicio</title>
+    
+    <!-- Estilos CSS -->
+    <link rel="stylesheet" href="css/reset.css">
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+<body>
+    <!-- ============================================
+         SIDEBAR - Menú Lateral (Cargado dinámicamente)
+    ============================================ -->
+    <div id="sidebar-placeholder"></div>
+
+    <!-- Wrapper para el contenido principal -->
+    <div id="main-wrapper" class="main-wrapper">
+        <!-- Header y Navegación -->
+        <header>
+            <nav>
+                <h1><i class="fa-solid fa-hotel" aria-hidden="true"></i> Hospedaje Digital</h1>
+            </nav>
+        </header>
+
+        <!-- Contenido Principal -->
+        <main>
+            <!-- Hero Section -->
+            <section class="hero">
+                <h2>Bienvenido a Hospedaje Digital</h2>
+                <p>Encuentra la habitación perfecta para tu estadía</p>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer>
+            <p>&copy; 2026 Hospedaje Digital. Todos los derechos reservados.</p>
+            <p>Conectado al backend en: http://localhost:3000</p>
+        </footer>
+    </div>
+
+    <!-- Scripts JavaScript -->
+    <!-- ⭐ IMPORTANTE: Cargar en este orden -->
+    <script src="js/main.js"></script>    <!-- Principal: Funciones compartidas -->
+    <script src="js/config.js"></script>    <!-- Primero: Configuración -->
+    <script src="js/constants.js"></script> <!-- Segundo: Constantes -->
+    <script src="js/validation.js"></script> <!-- Tercero: Validación -->
+    <script src="js/notifications.js"></script> <!-- Cuarto: Notificaciones -->
+    <script src="js/api.js"></script>      <!-- Quinto: Funciones de API -->
+    
+    <!-- Script de inicialización de Sidebar -->
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                console.log('Iniciando carga de sidebar en index.html...');
+                
+                // Cargar el sidebar dinámicamente solo si existe la función
+                if (typeof window.loadSidebarComponent === 'function') {
+                    const result = await window.loadSidebarComponent('sidebar-placeholder');
+                    console.log('Sidebar cargado:', result);
+                    
+                    // Filtrar elementos del sidebar según permisos
+                    if (typeof window.filterSidebarByPermissions === 'function') {
+                        await window.filterSidebarByPermissions();
+                        console.log('Permisos filtrados');
+                    }
+                } else {
+                    console.warn('loadSidebarComponent no está disponible');
+                }
+            } catch (error) {
+                console.error('Error al cargar la página:', error);
+                // Mostrar página de todas formas aunque falle el sidebar
+            }
+        });
+    </script>
+</body>
+</html>
+

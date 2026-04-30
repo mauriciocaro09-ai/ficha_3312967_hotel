@@ -24,7 +24,20 @@ const serviciosRoutes = require("./routes/servicios.routes");
 
 const verificarToken = require("./middlewares/auth.middleware");
 
+// Importar rutas de acceso y administración
+const passwordResetRoutes = require('./routes/passwordReset.routes');
+const usuariosRoutes = require('./routes/usuarios.routes');
+const rolesRoutes = require('./routes/roles.routes');
+
+// Rutas de autenticación y acceso
 app.use("/api/auth", authRoutes);
+app.use('/api/password-reset', passwordResetRoutes);
+
+// Rutas de administración
+app.use('/api/usuarios', usuariosRoutes);
+app.use('/api/roles', rolesRoutes);
+
+// Rutas de la API (hotel)
 app.use("/api/dashboard", verificarToken, dashboardRoutes);
 app.use("/api/reservas", reservasRoutes);
 app.use("/api/paquetes", paquetesRoutes);
@@ -37,6 +50,15 @@ app.use("/api/clientes", clientesRoutes);
 // =============================
 app.get("/", (req, res) => {
   res.json({ mensaje: "API Hospedaje Digital funcionando correctamente" });
+});
+
+// Health check básico para monitoreo y smoke tests
+app.get('/health', (req, res) => {
+    res.status(200).json({
+        status: 'ok',
+        service: 'hospedaje_digital_backend',
+        timestamp: new Date().toISOString()
+    });
 });
 
 module.exports = app;
