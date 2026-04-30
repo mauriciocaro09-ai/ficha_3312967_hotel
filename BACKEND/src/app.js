@@ -110,7 +110,21 @@ const serviciosRoutes = require('./routes/servicios.routes');
 const clienteRoutes = require('./routes/clientes.routes');
 const reservasRoutes = require('./routes/reservas.routes');
 
-// Rutas de la API
+// Importar rutas de acceso y administración
+const authRoutes = require('./routes/auth.routes');
+const passwordResetRoutes = require('./routes/passwordReset.routes');
+const usuariosRoutes = require('./routes/usuarios.routes');
+const rolesRoutes = require('./routes/roles.routes');
+
+// Rutas de autenticación y acceso (sin protección CSRF en endpoints de login)
+app.use('/api/auth', authRoutes);
+app.use('/api/password-reset', passwordResetRoutes);
+
+// Rutas de administración (protegidas)
+app.use('/api/usuarios', usuariosRoutes);
+app.use('/api/roles', rolesRoutes);
+
+// Rutas de la API (hotel)
 app.use('/api/habitaciones', habitacionesRoutes);
 app.use('/api/servicios', serviciosRoutes);
 app.use('/api/clientes', clienteRoutes);
@@ -121,6 +135,10 @@ app.get('/', (req, res) => {
     res.json({
         message: 'API de HOSPEDAJE_DIGITAL funcionando',
         endpoints: {
+            auth: '/api/auth',
+            passwordReset: '/api/password-reset',
+            usuarios: '/api/usuarios',
+            roles: '/api/roles',
             habitaciones: '/api/habitaciones',
             servicios: '/api/servicios',
             clientes: '/api/clientes',

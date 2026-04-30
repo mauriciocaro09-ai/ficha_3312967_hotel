@@ -3,20 +3,38 @@ const connection = require('./connection');
 async function main() {
     try {
         console.log('Conectando a la base de datos...');
-        await connection.connect();
+        // Con un pool, la conexión se establece automáticamente
         console.log('Conexión establecida correctamente.\n');
+
+        // Limpiar datos en orden inverso de dependencias
+        console.log('--- Limpiando datos existentes ---');
+        await connection.query('DELETE FROM detallereservaservicio WHERE IDDetalleReservaServicio > 0');
+        await connection.query('DELETE FROM detallereservapaquetes WHERE IDDetalleReservaPaquetes > 0');
+        await connection.query('DELETE FROM reserva WHERE IdReserva > 0');
+        await connection.query('DELETE FROM paquetes WHERE IDPaquete > 0');
+        await connection.query('DELETE FROM clientes WHERE NroDocumento != ""');
+        await connection.query('DELETE FROM usuarios WHERE IDUsuario > 0');
+        await connection.query('DELETE FROM servicio WHERE IDServicio > 0');
+        await connection.query('DELETE FROM habitacion WHERE IDHabitacion > 0');
+        await connection.query('DELETE FROM roles WHERE IDRol > 0');
+        console.log('✓ Datos limpiados\n');
 
         // 1. Insertar roles
         console.log('--- Insertando Roles ---');
-        await connection.query('DELETE FROM roles WHERE IDRol > 0');
         await connection.query(`INSERT INTO roles (IDRol, Nombre, Estado, IsActive) VALUES
             (1, 'Administrador', 'activo', 1),
             (3, 'Cliente', 'activo', 1)`);
         console.log('✓ Roles insertados\n');
 
+        // 1.5. Insertar Usuarios
+        console.log('--- Insertando Usuarios ---');
+        await connection.query(`INSERT INTO usuarios (NombreUsuario, Contrasena, Apellido, Email, TipoDocumento, NumeroDocumento, Telefono, Pais, Direccion, IDRol) VALUES
+            ('admin', 'admin123', 'Admin', 'admin@hotel.com', 'CC', 1234567890, '3001234567', 'Colombia', 'Calle Principal 100', 1),
+            ('cliente1', 'cliente123', 'Cliente Prueba', 'cliente@hotel.com', 'CC', 1098765432, '3109876543', 'Colombia', 'Calle Secundaria 50', 3)`);
+        console.log('✓ Usuarios insertados\n');
+
         // 2. Insertar habitaciones
         console.log('--- Insertando Habitaciones ---');
-        await connection.query('DELETE FROM habitacion WHERE IDHabitacion > 0');
         await connection.query(`INSERT INTO habitacion (IDHabitacion, NombreHabitacion, ImagenHabitacion, Descripcion, Costo, Estado) VALUES 
             (1, 'Habitación Estándar', NULL, 'Habitación cómoda con cama doble, baño privado, TV y aire acondicionado.', 100000, 1),
             (2, 'Habitación Deluxe', NULL, 'Habitación espaciosa con cama king, jacuzzi, mini bar y balcón con vista al mar.', 200000, 1),
@@ -30,7 +48,6 @@ async function main() {
 
         // 3. Insertar clientes
         console.log('--- Insertando Clientes ---');
-        await connection.query('DELETE FROM clientes WHERE NroDocumento != ""');
         await connection.query(`INSERT INTO clientes (NroDocumento, Nombre, Apellido, Direccion, Email, Telefono, Estado, IDRol) VALUES
             ('1001234567', 'Juan', 'Pérez García', 'Calle 123 #45-67', 'juan.perez@email.com', '3001234567', 1, 3),
             ('1002345678', 'María', 'López Hernández', 'Carrera 78 #12-34', 'maria.lopez@email.com', '3102345678', 1, 3),
@@ -46,8 +63,8 @@ async function main() {
 
         // 4. Insertar servicios
         console.log('--- Insertando Servicios ---');
-        await connection.query('DELETE FROM servicios WHERE IDServicio > 0');
-        await connection.query(`INSERT INTO servicios (IDServicio, NombreServicio, Descripcion, Duracion, CantidadMaximaPersonas, Costo, Estado) VALUES
+        await connection.query('DELETE FROM servicio WHERE IDServicio > 0');
+        await connection.query(`INSERT INTO servicio (IDServicio, NombreServicio, Descripcion, Duracion, CantidadMaximaPersonas, Costo, Estado) VALUES
             (1, 'Spa y Masajes', 'Relajantes tratamientos con aceites esenciales', '60 min', 2, 80000, 1),
             (2, 'Restaurante', 'Restaurante con comida local e internacional', '2 horas', 20, 0, 1),
             (3, 'Piscina', 'Acceso a piscina climatizada al aire libre', 'todo el día', 50, 0, 1),
@@ -62,8 +79,7 @@ async function main() {
 
         // 5. Insertar reservas
         console.log('--- Insertando Reservas ---');
-        await connection.query('DELETE FROM reserva WHERE IdReserva > 0');
-        await connection.query(`INSERT INTO reserva (IdReserva, NroDocumentoCliente, FechaReserva, FechaInicio, FechaFinalizacion, SubTotal, Descuento, IVA, MontoTotal, MetodoPago, IdEstadoReserva, UsuarioIdusuario) VALUES
+        await connection.query(`INSERT INTO reserva (IdReserva, NroDocumentoCliente, FechaReserva, FechaInicio, FechaFinalizacion, Sub_Total, Descuento, IVA, Monto_Total, MetodoPago, IdEstadoReserva, id_usuario) VALUES
             (1, '1001234567', '2026-03-15 10:30:00', '2026-03-20', '2026-03-25', 500000, 0, 95000, 595000, 1, 1, 1),
             (2, '1002345678', '2026-03-16 14:00:00', '2026-03-22', '2026-03-27', 1000000, 50000, 180500, 1180500, 2, 1, 1),
             (3, '1003456789', '2026-03-17 09:15:00', '2026-03-25', '2026-03-30', 1750000, 0, 332500, 2082500, 1, 2, 1),
@@ -85,7 +101,7 @@ async function main() {
         const [clientes] = await connection.query('SELECT COUNT(*) as total FROM clientes');
         console.log(`Clientes: ${clientes[0].total}`);
         
-        const [servicios] = await connection.query('SELECT COUNT(*) as total FROM servicios');
+        const [servicios] = await connection.query('SELECT COUNT(*) as total FROM servicio');
         console.log(`Servicios: ${servicios[0].total}`);
         
         const [reservas] = await connection.query('SELECT COUNT(*) as total FROM reserva');
@@ -93,6 +109,9 @@ async function main() {
         
         const [roles] = await connection.query('SELECT COUNT(*) as total FROM roles');
         console.log(`Roles: ${roles[0].total}`);
+
+        const [usuarios] = await connection.query('SELECT COUNT(*) as total FROM usuarios');
+        console.log(`Usuarios: ${usuarios[0].total}`);
 
         console.log('\n✓✓✓ Todos los datos fueron insertados correctamente en la base de datos!');
         

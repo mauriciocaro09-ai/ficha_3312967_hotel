@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Hospedaje Digital</title>
+    <link rel="stylesheet" href="../css/reset.css">
+    <link rel="stylesheet" href="../css/variables.css">
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; }
+        html, body {
+            background-color: var(--color-background) !important;
+            color: var(--color-text) !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        body { font-family: var(--font-family); }
+        #main-wrapper { background-color: var(--color-background) !important; min-height: 100vh; }
+        main { background-color: var(--color-background) !important; color: var(--color-text) !important; padding: var(--spacing-lg) !important; }
+        footer { background-color: var(--color-light-gray) !important; color: var(--color-text-light) !important; }
+        
+        .dashboard-container { padding: var(--spacing-lg); max-width: 1200px; margin: 0 auto; }
+        .dashboard-header { text-align: center; margin-bottom: var(--spacing-xl); }
+        .dashboard-header h1 { font-size: 28px; color: var(--color-primary); margin-bottom: 5px; margin-top: 0; }
+        .dashboard-header p { color: var(--color-text-light); font-size: 14px; margin: 0; }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            background: var(--color-white);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .empty-state-icon {
+            font-size: 60px;
+            color: var(--color-primary);
+            margin-bottom: var(--spacing-lg);
+        }
+        
+        .empty-state-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--color-text);
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .empty-state-message {
+            color: var(--color-text-light);
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar placeholder (será reemplazado dinámicamente) -->
+    <div id="sidebar-placeholder"></div>
+
+    <div id="main-wrapper" class="main-wrapper">
+        <!-- Header y Navegación -->
+        <header>
+            <nav>
+                <h1><i class="fa-solid fa-hotel" aria-hidden="true"></i> Hospedaje Digital</h1>
+                <ul>
+                    <li><a href="../index.html">Inicio</a></li>
+                    <li><a href="nosotros.html">Nosotros</a></li>
+                    <li><a href="contacto.html">Contacto</a></li>
+                </ul>
+                <button id="toggle-contraste" class="btn-contraste" type="button" aria-pressed="false">
+                    Alto contraste: OFF
+                </button>
+            </nav>
+        </header>
+
+        <main>
+            <div class="dashboard-container">
+                <div class="dashboard-header">
+                    <h1>📊 Dashboard</h1>
+                    <p>Panel de control del sistema</p>
+                </div>
+
+                <div class="empty-state">
+                    <div class="empty-state-icon">🚀</div>
+                    <h2 class="empty-state-title">Dashboard en Construcción</h2>
+                    <p class="empty-state-message">Esta sección estará disponible próximamente con estadísticas y gráficos del sistema.</p>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2026 Hospedaje Digital. Todos los derechos reservados.</p>
+        </footer>
+    </div>
+
+    <script src="../js/config.js"></script>
+    <script src="../js/main.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const session = window.getStoredSession ? window.getStoredSession() : verificarSesion();
+
+            if (!session) {
+                window.location.href = '../login.html';
+                return;
+            }
+
+            await window.loadSidebarComponent('sidebar-placeholder');
+            await window.filterSidebarByPermissions();
+        });
+    </script>
+</body>
+</html>
