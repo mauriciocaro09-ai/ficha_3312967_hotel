@@ -9,7 +9,7 @@ const list = async () => {
     const [reservas] = await db.execute(`
         SELECT r.*, c.Nombre, c.Apellido, c.Email, e.NombreEstadoReserva AS EstadoReservaNombre
         FROM reserva r
-        LEFT JOIN cliente c ON r.NroDocumentoCliente = c.NroDocumento
+        LEFT JOIN clientes c ON r.IDCliente = c.IDCliente
         LEFT JOIN estadosreserva e ON r.IdEstadoReserva = e.IdEstadoReserva
         ORDER BY r.FechaReserva DESC
     `);
@@ -21,7 +21,7 @@ const getById = async (id) => {
     const [rows] = await db.execute(`
         SELECT r.*, c.Nombre, c.Apellido, c.Email, c.Telefono, e.NombreEstadoReserva AS EstadoReservaNombre
         FROM reserva r
-        LEFT JOIN cliente c ON r.NroDocumentoCliente = c.NroDocumento
+        LEFT JOIN clientes c ON r.IDCliente = c.IDCliente
         LEFT JOIN estadosreserva e ON r.IdEstadoReserva = e.IdEstadoReserva
         WHERE r.IdReserva = ?
     `, [id]);
@@ -31,22 +31,23 @@ const getById = async (id) => {
 // Crear reserva
 const create = async (reservaData) => {
     const {
-        NroDocumentoCliente,
+        IDCliente,
+        IDHabitacion,
         FechaInicio,
         FechaFinalizacion,
-        Sub_Total,
+        SubTotal,
         Descuento,
         IVA,
-        Monto_Total,
+        MontoTotal,
         MetodoPago,
         IdEstadoReserva,
-        id_usuario
+        UsuarioIdusuario
     } = reservaData;
 
     const [result] = await db.execute(
-        `INSERT INTO reserva (NroDocumentoCliente, FechaReserva, FechaInicio, FechaFinalizacion, Sub_Total, Descuento, IVA, Monto_Total, MetodoPago, IdEstadoReserva, id_usuario)
-         VALUES (?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [NroDocumentoCliente, FechaInicio, FechaFinalizacion, Sub_Total, Descuento, IVA, Monto_Total, MetodoPago, IdEstadoReserva, id_usuario]
+        `INSERT INTO reserva (IDCliente, IDHabitacion, FechaReserva, FechaInicio, FechaFinalizacion, SubTotal, Descuento, IVA, MontoTotal, MetodoPago, IdEstadoReserva, UsuarioIdusuario)
+         VALUES (?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [IDCliente, IDHabitacion, FechaInicio, FechaFinalizacion, SubTotal, Descuento, IVA, MontoTotal, MetodoPago, IdEstadoReserva, UsuarioIdusuario]
     );
     return result;
 };
@@ -54,21 +55,22 @@ const create = async (reservaData) => {
 // Actualizar reserva
 const updateReserva = async (id, reservaData) => {
     const {
-        NroDocumentoCliente,
+        IDCliente,
+        IDHabitacion,
         FechaInicio,
         FechaFinalizacion,
-        Sub_Total,
+        SubTotal,
         Descuento,
         IVA,
-        Monto_Total,
+        MontoTotal,
         MetodoPago,
         IdEstadoReserva,
-        id_usuario
+        UsuarioIdusuario
     } = reservaData;
 
     const [result] = await db.execute(
-        `UPDATE reserva SET NroDocumentoCliente = ?, FechaInicio = ?, FechaFinalizacion = ?, Sub_Total = ?, Descuento = ?, IVA = ?, Monto_Total = ?, MetodoPago = ?, IdEstadoReserva = ?, id_usuario = ? WHERE IdReserva = ?`,
-        [NroDocumentoCliente, FechaInicio, FechaFinalizacion, Sub_Total, Descuento, IVA, Monto_Total, MetodoPago, IdEstadoReserva, id_usuario, id]
+        `UPDATE reserva SET IDCliente = ?, IDHabitacion = ?, FechaInicio = ?, FechaFinalizacion = ?, SubTotal = ?, Descuento = ?, IVA = ?, MontoTotal = ?, MetodoPago = ?, IdEstadoReserva = ?, UsuarioIdusuario = ? WHERE IdReserva = ?`,
+        [IDCliente, IDHabitacion, FechaInicio, FechaFinalizacion, SubTotal, Descuento, IVA, MontoTotal, MetodoPago, IdEstadoReserva, UsuarioIdusuario, id]
     );
     return result;
 };
@@ -92,9 +94,9 @@ const getByCliente = async (nroDocumento) => {
     const [reservas] = await db.execute(`
         SELECT r.*, c.Nombre, c.Apellido, e.NombreEstadoReserva AS EstadoReservaNombre
         FROM reserva r
-        LEFT JOIN cliente c ON r.NroDocumentoCliente = c.NroDocumento
+        LEFT JOIN clientes c ON r.IDCliente = c.IDCliente
         LEFT JOIN estadosreserva e ON r.IdEstadoReserva = e.IdEstadoReserva
-        WHERE r.NroDocumentoCliente = ?
+        WHERE c.NroDocumento = ?
         ORDER BY r.FechaReserva DESC
     `, [nroDocumento]);
     return reservas;
@@ -132,7 +134,7 @@ const getServicesByReserva = async (idReserva, estadoFiltro = 1) => {
             (drs.Cantidad * drs.Precio) AS TotalLinea,
             drs.Estado
          FROM detallereservaservicio drs
-         INNER JOIN servicio s ON s.IDServicio = drs.IDServicio
+         INNER JOIN servicios s ON s.IDServicio = drs.IDServicio
          WHERE drs.IDReserva = ?`;
 
     const params = [idReserva];
@@ -156,7 +158,7 @@ const addServiceToReserva = async (idReserva, serviceData) => {
 
     try {
         const [reservaRows] = await db.execute(
-            'SELECT IdReserva, Sub_Total, Descuento, IVA FROM reserva WHERE IdReserva = ?',
+            'SELECT IdReserva, SubTotal, Descuento, IVA FROM reserva WHERE IdReserva = ?',
             [idReserva]
         );
 
@@ -167,7 +169,7 @@ const addServiceToReserva = async (idReserva, serviceData) => {
         }
 
         const [servicioRows] = await db.execute(
-            'SELECT IDServicio, Costo, Estado FROM servicio WHERE IDServicio = ?',
+            'SELECT IDServicio, Costo, Estado FROM servicios WHERE IDServicio = ?',
             [IDServicio]
         );
 
@@ -257,7 +259,7 @@ const addServiceToReserva = async (idReserva, serviceData) => {
             [idReserva]
         );
 
-        const subtotalActualReserva = Number(reservaRows[0].Sub_Total || 0);
+        const subtotalActualReserva = Number(reservaRows[0].SubTotal || 0);
         const totalServiciosAntes = Number(sumBeforeRows[0].totalServiciosAntes || 0);
         const totalServicios = Number(sumRows[0].totalServicios || 0);
         const subtotalBaseSinServicios = Math.max(0, subtotalActualReserva - totalServiciosAntes);
@@ -265,8 +267,8 @@ const addServiceToReserva = async (idReserva, serviceData) => {
 
         await db.execute(
             `UPDATE reserva
-             SET Sub_Total = ?,
-                 Monto_Total = (? - COALESCE(Descuento, 0)) + COALESCE(IVA, 0)
+             SET SubTotal = ?,
+                 MontoTotal = (? - COALESCE(Descuento, 0)) + COALESCE(IVA, 0)
              WHERE IdReserva = ?`,
             [nuevoSubTotal, nuevoSubTotal, idReserva]
         );
@@ -293,7 +295,7 @@ const removeServiceFromReserva = async (idReserva, idDetalleReservaServicio) => 
 
     try {
         const [reservaRows] = await db.execute(
-            'SELECT IdReserva, Sub_Total, Descuento, IVA FROM reserva WHERE IdReserva = ?',
+            'SELECT IdReserva, SubTotal, Descuento, IVA FROM reserva WHERE IdReserva = ?',
             [idReserva]
         );
 
@@ -343,7 +345,7 @@ const removeServiceFromReserva = async (idReserva, idDetalleReservaServicio) => 
             [idReserva]
         );
 
-        const subtotalActualReserva = Number(reservaRows[0].Sub_Total || 0);
+        const subtotalActualReserva = Number(reservaRows[0].SubTotal || 0);
         const totalServiciosAntes = Number(sumBeforeRows[0].totalServiciosAntes || 0);
         const totalServiciosDespues = Number(sumAfterRows[0].totalServiciosDespues || 0);
         const subtotalBaseSinServicios = Math.max(0, subtotalActualReserva - totalServiciosAntes);
@@ -351,8 +353,8 @@ const removeServiceFromReserva = async (idReserva, idDetalleReservaServicio) => 
 
         await db.execute(
             `UPDATE reserva
-             SET Sub_Total = ?,
-                 Monto_Total = (? - COALESCE(Descuento, 0)) + COALESCE(IVA, 0)
+             SET SubTotal = ?,
+                 MontoTotal = (? - COALESCE(Descuento, 0)) + COALESCE(IVA, 0)
              WHERE IdReserva = ?`,
             [nuevoSubTotal, nuevoSubTotal, idReserva]
         );
